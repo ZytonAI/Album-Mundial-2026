@@ -178,7 +178,7 @@ function App() {
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
               <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
               <div style={{display:'flex', flexDirection:'column', gap:5, marginBottom:12}}>
-                {['✅ Guarda tus láminas','✅ Los 48 equipos completos','✅ Sistema de intercambios','✅ Progreso sincronizado'].map(f => (
+                {['✅ Accede al mejor sistema de intercambios','✅ Guarda y organiza tus láminas automáticamente','✅ Detecta duplicados al instante','✅ Accede desde cualquier dispositivo'].map(f => (
                   <div key={f} style={{fontSize:11, color:'var(--text-muted)'}}>{f}</div>
                 ))}
               </div>
@@ -354,7 +354,7 @@ function PaywallModal({ user, onClose }) {
         <p style={pwCSS.sub}>Guarda tu colección completa en la nube y accede desde cualquier dispositivo.</p>
 
         <div style={pwCSS.features}>
-          {['✅ Guardar tus láminas', '✅ Los 48 equipos completos', '✅ Sistema de intercambios', '✅ Progreso sincronizado'].map(f => (
+          {['✅ Accede al mejor sistema de intercambios', '✅ Guarda y organiza tus láminas automáticamente', '✅ Detecta duplicados al instante', '✅ Accede desde cualquier dispositivo'].map(f => (
             <div key={f} style={pwCSS.feature}>{f}</div>
           ))}
         </div>
