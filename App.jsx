@@ -140,7 +140,7 @@ function App() {
 
         {/* User chip / Auth buttons */}
         {user ? (
-          <div style={sCSS.userChip}>
+          <div className="sidebar-user" style={sCSS.userChip}>
             <div style={sCSS.avatar}>{displayName[0].toUpperCase()}</div>
             <div style={{minWidth:0}}>
               <div style={{color:'var(--text)', fontWeight:600, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{displayName}</div>
@@ -158,7 +158,7 @@ function App() {
             )}
           </div>
         ) : (
-          <div style={{padding:'0 16px 12px', display:'flex', flexDirection:'column', gap:8}}>
+          <div className="sidebar-user" style={{padding:'0 16px 12px', display:'flex', flexDirection:'column', gap:8}}>
             <button
               onClick={() => { setAuthInitialMode('login'); setView('auth'); }}
               style={sCSS.authBtn}>

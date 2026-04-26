@@ -102,11 +102,12 @@
       .app-topbar  { display: flex !important; }
       .app-main    { margin-left: 0 !important; padding-top: 52px; }
 
-      /* Reordenar sidebar en móvil: progreso arriba, logout debajo del promo */
-      .sidebar-nav      { flex: 0 0 auto !important; order: 2; }
+      /* Reordenar sidebar en móvil: progreso encima del perfil */
       .sidebar-progress { order: 1; }
-      .sidebar-promo    { order: 3; }
-      .sidebar-logout   { order: 4; margin-top: 24px; }
+      .sidebar-user     { order: 2; }
+      .sidebar-nav      { flex: 0 0 auto !important; order: 3; }
+      .sidebar-promo    { order: 4; }
+      .sidebar-logout   { order: 5; margin-top: 24px; }
     }
 
     /* ── Mobile sticker grid ───────────────────────────────── */
