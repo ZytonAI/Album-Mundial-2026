@@ -123,11 +123,16 @@ window.DB = (() => {
     if (!isSupabaseMode() || Object.keys(_pendingUpdates).length === 0) return;
     const sb = getClient();
     const uid = _user?.id;
-    const rows = Object.entries(_pendingUpdates).map(([sticker_id, quantity]) => ({
+    const snapshot = { ..._pendingUpdates };
+    _pendingUpdates = {};
+    const rows = Object.entries(snapshot).map(([sticker_id, quantity]) => ({
       user_id: uid, sticker_id, quantity, updated_at: new Date().toISOString(),
     }));
-    _pendingUpdates = {};
-    await sb.from('user_stickers').upsert(rows, { onConflict: 'user_id,sticker_id' });
+    const { error } = await sb.from('user_stickers').upsert(rows, { onConflict: 'user_id,sticker_id' });
+    if (error) {
+      // Restore failed updates so next flush retries them
+      Object.assign(_pendingUpdates, snapshot);
+    }
   }
 
   function updateSticker(stickerId, quantity) {
@@ -162,6 +167,12 @@ create policy "Solo mis laminas"
   on user_stickers for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);`;
+
+  // Flush on tab hide / page close so no pending writes are lost
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPending();
+  });
+  window.addEventListener('pagehide', () => flushPending());
 
   return { getConfig, saveConfig, isSupabaseMode, register, login, logout, getCurrentUser, getStickers, updateSticker, flushPending, SETUP_SQL };
 })();

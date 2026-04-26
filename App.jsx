@@ -16,7 +16,6 @@ function App() {
   const [user,            setUser]            = useAppState(null);
   const [stickers,        setStickers]        = useAppState({});
   const [selectedCountry, setSelectedCountry] = useAppState(null);
-  const [settingsOpen,    setSettingsOpen]    = useAppState(false);
   const [mobileOpen,      setMobileOpen]      = useAppState(false);
   const [theme,           setTheme]           = useAppState(getStoredTheme);
 
@@ -28,7 +27,6 @@ function App() {
   }
 
   useAppEffect(() => {
-    window.__openSettings = () => setSettingsOpen(true);
     DB.getCurrentUser().then(u => {
       if (u) { setUser(u); DB.getStickers().then(s => setStickers(s)); setView('dashboard'); }
       else setView('auth');
@@ -124,8 +122,7 @@ function App() {
 
         {/* Bottom actions */}
         <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
-          <button style={sCSS.settingsBtn} onClick={() => setSettingsOpen(true)}>⚙️ Configuración</button>
-          <button style={sCSS.logoutBtn}   onClick={handleLogout}>Cerrar sesión</button>
+          <button style={sCSS.logoutBtn} onClick={handleLogout}>Cerrar sesión</button>
         </div>
       </aside>
 
@@ -156,8 +153,6 @@ function App() {
         {view === 'trades' && <Trades stickers={stickers} onUpdateSticker={handleUpdateSticker} />}
       </main>
 
-      {/* ── Settings modal ────────────────────────────────── */}
-      {settingsOpen && <SettingsModal theme={theme} toggleTheme={toggleTheme} onClose={() => setSettingsOpen(false)} />}
     </div>
   );
 }
@@ -181,88 +176,6 @@ function SidebarProgress({ stickers }) {
   );
 }
 
-// ── Settings Modal ─────────────────────────────────────────────────────────────
-function SettingsModal({ theme, toggleTheme, onClose }) {
-  const [url,     setUrl]     = useAppState(DB.getConfig().supabaseUrl  || '');
-  const [key,     setKey]     = useAppState(DB.getConfig().supabaseKey  || '');
-  const [showSQL, setShowSQL] = useAppState(false);
-  const [saved,   setSaved]   = useAppState(false);
-
-  function save() {
-    DB.saveConfig({ supabaseUrl: url.trim(), supabaseKey: key.trim() });
-    setSaved(true);
-    setTimeout(() => { setSaved(false); onClose(); window.location.reload(); }, 1300);
-  }
-  function clearSupa() { DB.saveConfig({}); onClose(); window.location.reload(); }
-
-  const inp = { width:'100%', padding:'10px 12px', background:'var(--input-bg)', border:'1px solid var(--border-md)', borderRadius:8, color:'var(--text)', fontSize:13, outline:'none' };
-
-  return (
-    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.65)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }} onClick={onClose}>
-      <div style={{ background:'var(--surface)', borderRadius:16, width:'100%', maxWidth:500, border:'1px solid var(--border)', maxHeight:'90vh', overflow:'auto' }} onClick={e=>e.stopPropagation()}>
-        {/* Header */}
-        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'20px 24px 16px', borderBottom:'1px solid var(--border)' }}>
-          <h3 style={{ color:'var(--text)', fontSize:17, fontWeight:700, margin:0 }}>⚙️ Configuración</h3>
-          <button style={{ background:'none', border:'none', color:'var(--text-muted)', fontSize:18, cursor:'pointer' }} onClick={onClose}>✕</button>
-        </div>
-
-        <div style={{ padding:'20px 24px' }}>
-          {/* Theme */}
-          <div style={{ marginBottom:24, padding:'16px', background:'var(--surface2)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <div>
-              <div style={{ color:'var(--text)', fontWeight:600, fontSize:14 }}>Apariencia</div>
-              <div style={{ color:'var(--text-dim)', fontSize:12, marginTop:2 }}>Modo {theme==='dark'?'oscuro':'claro'} activo</div>
-            </div>
-            <button onClick={toggleTheme} style={{ padding:'8px 18px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:99, color:'var(--text)', fontSize:13, cursor:'pointer', fontWeight:600 }}>
-              {theme==='dark' ? '☀️ Modo claro' : '🌙 Modo oscuro'}
-            </button>
-          </div>
-
-          {/* Supabase */}
-          <h4 style={{ color:'var(--text)', fontSize:14, fontWeight:700, marginBottom:8 }}>☁️ Conectar Supabase</h4>
-          <p style={{ color:'var(--text-dim)', fontSize:13, marginBottom:16, lineHeight:1.5 }}>
-            Sin Supabase los datos se guardan solo en este navegador. Con Supabase tu colección viaja a la nube.
-          </p>
-
-          <div style={{ marginBottom:14 }}>
-            <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>URL del proyecto</label>
-            <input style={inp} value={url} onChange={e=>setUrl(e.target.value)} placeholder="https://xxxx.supabase.co" />
-          </div>
-          <div style={{ marginBottom:14 }}>
-            <label style={{ display:'block', fontSize:11, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.05em', marginBottom:6 }}>Anon Key (clave pública)</label>
-            <input style={inp} value={key} onChange={e=>setKey(e.target.value)} placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…" />
-          </div>
-
-          <button style={{ background:'none', border:'none', color:'var(--gold)', fontSize:13, cursor:'pointer', fontWeight:600, padding:'4px 0' }} onClick={() => setShowSQL(!showSQL)}>
-            {showSQL?'▲':'▶'} Ver SQL para configurar Supabase
-          </button>
-          {showSQL && <pre style={{ background:'var(--input-bg)', border:'1px solid var(--border)', borderRadius:10, padding:14, color:'var(--text-muted)', fontSize:11, lineHeight:1.6, overflowX:'auto', marginTop:8, whiteSpace:'pre-wrap' }}>{DB.SETUP_SQL}</pre>}
-
-          {!showSQL && (
-            <div style={{ background:'var(--input-bg)', borderRadius:10, padding:14, marginTop:12 }}>
-              <p style={{color:'var(--text-muted)', fontSize:13, marginBottom:8, fontWeight:600}}>Pasos rápidos:</p>
-              {['1. Crea un proyecto gratis en supabase.com','2. En SQL Editor, ejecuta el código SQL (ver arriba)','3. Copia URL y Anon Key desde Settings → API','4. Pégalas aquí y guarda'].map((s,i) => (
-                <p key={i} style={{color:'var(--text-dim)', fontSize:12, marginBottom:4}}>• {s}</p>
-              ))}
-            </div>
-          )}
-
-          <div style={{ display:'flex', gap:10, marginTop:20, flexWrap:'wrap' }}>
-            <button style={{ padding:'11px 20px', background:'var(--green)', border:'none', borderRadius:8, color:'#fff', fontSize:14, fontWeight:700, cursor:'pointer' }} onClick={save}>
-              {saved ? '✅ Guardado' : 'Guardar y reconectar'}
-            </button>
-            {DB.isSupabaseMode() && (
-              <button style={{ padding:'11px 20px', background:'var(--red-bg)', border:'1px solid var(--red-brd)', borderRadius:8, color:'var(--red)', fontSize:14, cursor:'pointer' }} onClick={clearSupa}>
-                Volver a modo local
-              </button>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 const sCSS = {
   sidebar:    { width:240, background:'var(--surface2)', borderRight:'1px solid var(--border)', display:'flex', flexDirection:'column', position:'fixed', top:0, left:0, height:'100vh', zIndex:100, padding:'20px 0', transition:'transform .3s', overflowY:'auto' },
   brand:      { display:'flex', alignItems:'center', gap:10, padding:'0 16px 16px', borderBottom:'1px solid var(--border)', marginBottom:12 },
@@ -271,7 +184,6 @@ const sCSS = {
   avatar:     { width:32, height:32, borderRadius:'50%', background:'var(--green)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:14, flexShrink:0 },
   navBtn:     { display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 12px', background:'none', border:'none', borderRadius:10, color:'var(--text-muted)', fontSize:14, cursor:'pointer', marginBottom:2, fontWeight:500 },
   navActive:  { background:'var(--green-bg)', color:'var(--green)', fontWeight:700 },
-  settingsBtn:{ padding:'9px 12px', background:'none', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-muted)', fontSize:13, cursor:'pointer', textAlign:'left' },
   logoutBtn:  { padding:'9px 12px', background:'none', border:'none', borderRadius:8, color:'var(--text-dimmer)', fontSize:13, cursor:'pointer', textAlign:'left', marginBottom:8 },
   topBar:     { display:'none', position:'fixed', top:0, left:0, right:0, height:52, background:'var(--surface2)', borderBottom:'1px solid var(--border)', zIndex:99, alignItems:'center', justifyContent:'space-between', padding:'0 16px' },
   menuBtn:    { background:'none', border:'none', color:'var(--text)', fontSize:20, cursor:'pointer', width:36 },
