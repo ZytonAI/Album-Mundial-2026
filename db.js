@@ -2,6 +2,7 @@
 window.DB = (() => {
   let _supabase = null;
   let _user = null;
+  let _isPremium = false;
   let _pendingUpdates = {};
   let _flushTimer = null;
 
@@ -34,12 +35,21 @@ window.DB = (() => {
   }
 
   // ── Auth ─────────────────────────────────────────────────────────────────────
+  async function loadUserProfile() {
+    if (!isSupabaseMode() || !_user) return;
+    const sb = getClient();
+    const { data } = await sb.from('profiles').select('is_premium').eq('id', _user.id).single();
+    _isPremium = data?.is_premium || false;
+    _user.isPremium = _isPremium;
+  }
+
   async function register(email, password, name) {
     if (isSupabaseMode()) {
       const sb = getClient();
       const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name } } });
       if (error) throw error;
-      _user = { id: data.user.id, email, name };
+      _user = { id: data.user.id, email, name, isPremium: false };
+      _isPremium = false;
       return _user;
     }
     const users = _getLocalUsers();
@@ -47,7 +57,8 @@ window.DB = (() => {
     const user = { id: `local_${Date.now()}`, email, password, name };
     users.push(user);
     localStorage.setItem('mona26_users', JSON.stringify(users));
-    _user = { id: user.id, email, name };
+    _user = { id: user.id, email, name, isPremium: false };
+    _isPremium = false;
     localStorage.setItem('mona26_session', JSON.stringify(_user));
     return _user;
   }
@@ -59,12 +70,14 @@ window.DB = (() => {
       if (error) throw error;
       const meta = data.user.user_metadata || {};
       _user = { id: data.user.id, email: data.user.email, name: meta.name || email.split('@')[0] };
+      await loadUserProfile();
       return _user;
     }
     const users = _getLocalUsers();
     const found = users.find(u => u.email === email && u.password === password);
     if (!found) throw new Error('Correo o contraseña incorrectos');
-    _user = { id: found.id, email: found.email, name: found.name };
+    _user = { id: found.id, email: found.email, name: found.name, isPremium: false };
+    _isPremium = false;
     localStorage.setItem('mona26_session', JSON.stringify(_user));
     return _user;
   }
@@ -73,6 +86,7 @@ window.DB = (() => {
     if (isSupabaseMode()) { try { await getClient().auth.signOut(); } catch {} }
     else { localStorage.removeItem('mona26_session'); }
     _user = null;
+    _isPremium = false;
     _pendingUpdates = {};
   }
 
@@ -84,10 +98,12 @@ window.DB = (() => {
       if (!data?.user) return null;
       const meta = data.user.user_metadata || {};
       _user = { id: data.user.id, email: data.user.email, name: meta.name || data.user.email.split('@')[0] };
+      await loadUserProfile();
       return _user;
     }
     try {
       _user = JSON.parse(localStorage.getItem('mona26_session') || 'null');
+      if (_user) _user.isPremium = false;
       return _user;
     } catch { return null; }
   }
@@ -174,5 +190,5 @@ create policy "Solo mis laminas"
   });
   window.addEventListener('pagehide', () => flushPending());
 
-  return { getConfig, saveConfig, isSupabaseMode, register, login, logout, getCurrentUser, getStickers, updateSticker, flushPending, SETUP_SQL };
+  return { getConfig, saveConfig, isSupabaseMode, getClient, register, login, logout, getCurrentUser, loadUserProfile, getStickers, updateSticker, flushPending, SETUP_SQL };
 })();

@@ -1,5 +1,5 @@
 // App.jsx
-const { useState: useAppState, useEffect: useAppEffect, useCallback: useAppCallback } = React;
+const { useState: useAppState, useEffect: useAppEffect, useCallback: useAppCallback, useRef: useAppRef } = React;
 
 // ── Theme toggle helper ───────────────────────────────────────────────────────
 function getStoredTheme() {
@@ -18,6 +18,10 @@ function App() {
   const [selectedCountry, setSelectedCountry] = useAppState(null);
   const [mobileOpen,      setMobileOpen]      = useAppState(false);
   const [theme,           setTheme]           = useAppState(getStoredTheme);
+  const [showPaywall,     setShowPaywall]     = useAppState(false);
+  const [successToast,    setSuccessToast]    = useAppState(false);
+  const userRef = useAppRef(user);
+  userRef.current = user;
 
   // Apply theme on mount and change
   useAppEffect(() => { applyTheme(theme); }, [theme]);
@@ -27,9 +31,22 @@ function App() {
   }
 
   useAppEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const isSuccess = params.get('success') === '1';
+
     DB.getCurrentUser().then(u => {
-      if (u) { setUser(u); DB.getStickers().then(s => setStickers(s)); setView('dashboard'); }
-      else setView('auth');
+      if (u) {
+        setUser(u);
+        DB.getStickers().then(s => setStickers(s));
+        setView('dashboard');
+        if (isSuccess) {
+          window.history.replaceState({}, '', window.location.pathname);
+          setSuccessToast(true);
+          setTimeout(() => setSuccessToast(false), 5000);
+        }
+      } else {
+        setView('auth');
+      }
     });
   }, []);
 
@@ -51,6 +68,10 @@ function App() {
   }
 
   const handleUpdateSticker = useAppCallback((id, qty) => {
+    if (!userRef.current?.isPremium) {
+      setShowPaywall(true);
+      return;
+    }
     setStickers(prev => ({ ...prev, [id]: qty }));
     DB.updateSticker(id, qty);
   }, []);
@@ -95,8 +116,18 @@ function App() {
           <div style={sCSS.avatar}>{displayName[0].toUpperCase()}</div>
           <div style={{minWidth:0}}>
             <div style={{color:'var(--text)', fontWeight:600, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{displayName}</div>
-            <div style={{color:'var(--text-dimmer)', fontSize:10, marginTop:2}}>{DB.isSupabaseMode() ? '☁️ Supabase' : '💾 Local'}</div>
+            <div style={{color:'var(--text-dimmer)', fontSize:10, marginTop:2}}>
+              {user?.isPremium ? '⭐ Premium' : DB.isSupabaseMode() ? '☁️ Supabase' : '💾 Local'}
+            </div>
           </div>
+          {!user?.isPremium && (
+            <button
+              onClick={() => setShowPaywall(true)}
+              style={{marginLeft:'auto', padding:'3px 8px', background:'var(--gold)', border:'none', borderRadius:6, color:'#000', fontSize:10, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0}}
+              title="Desbloquear álbum completo">
+              $7.000
+            </button>
+          )}
         </div>
 
         {/* Nav */}
@@ -119,6 +150,38 @@ function App() {
         <div style={{padding:'0 16px 16px'}}>
           <SidebarProgress stickers={stickers} />
         </div>
+
+        {/* Badge premium */}
+        {user?.isPremium && (
+          <div style={{padding:'0 16px 16px'}}>
+            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', gap:10}}>
+              <span style={{fontSize:22}}>⭐</span>
+              <div>
+                <div style={{fontWeight:800, color:'var(--gold)', fontSize:13}}>Premium</div>
+                <div style={{fontSize:10, color:'var(--text-muted)', marginTop:1}}>Álbum completo desbloqueado</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Promo box — solo para no-premium */}
+        {!user?.isPremium && (
+          <div style={{padding:'0 16px 16px'}}>
+            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
+              <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
+              <div style={{display:'flex', flexDirection:'column', gap:5, marginBottom:12}}>
+                {['✅ Guarda tus láminas','✅ Los 48 equipos completos','✅ Sistema de intercambios','✅ Progreso sincronizado'].map(f => (
+                  <div key={f} style={{fontSize:11, color:'var(--text-muted)'}}>{f}</div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowPaywall(true)}
+                style={{width:'100%', padding:'10px', background:'var(--gold)', border:'none', borderRadius:8, color:'#000', fontSize:13, fontWeight:800, cursor:'pointer'}}>
+                💳 Pagar $7.000 COP
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Bottom actions */}
         <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
@@ -152,6 +215,16 @@ function App() {
         )}
         {view === 'trades' && <Trades stickers={stickers} onUpdateSticker={handleUpdateSticker} />}
       </main>
+
+      {/* ── Paywall modal ─────────────────────────────────── */}
+      {showPaywall && <PaywallModal user={user} onClose={() => setShowPaywall(false)} />}
+
+      {/* ── Success toast ─────────────────────────────────── */}
+      {successToast && (
+        <div style={sCSS.toast}>
+          🎉 ¡Pago confirmado! Tu álbum está desbloqueado.
+        </div>
+      )}
 
     </div>
   );
@@ -189,6 +262,85 @@ const sCSS = {
   menuBtn:    { background:'none', border:'none', color:'var(--text)', fontSize:20, cursor:'pointer', width:36 },
   overlay:    { position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:99 },
   main:       { marginLeft:240, flex:1, minHeight:'100vh', background:'var(--bg)' },
+  toast:      { position:'fixed', bottom:24, left:'50%', transform:'translateX(-50%)', background:'var(--green)', color:'#fff', padding:'13px 22px', borderRadius:12, fontWeight:700, fontSize:14, zIndex:200, boxShadow:'0 4px 20px rgba(0,0,0,.25)', whiteSpace:'nowrap' },
+};
+
+// ── Paywall Modal ─────────────────────────────────────────────────────────────
+function PaywallModal({ user, onClose }) {
+  const [loading, setLoading] = useAppState(false);
+  const [error, setError]     = useAppState('');
+
+  async function handleCheckout() {
+    if (!DB.isSupabaseMode()) {
+      setError('Necesitas una cuenta de Supabase para procesar pagos.');
+      return;
+    }
+    setLoading(true);
+    setError('');
+    try {
+      const { data, error: fnErr } = await DB.getClient().functions.invoke('create-preference', {
+        body: { user_id: user.id, email: user.email },
+      });
+      if (fnErr) {
+        let msg = fnErr.message;
+        try { const b = await fnErr.context.json(); msg = b?.error || msg; } catch {}
+        throw new Error(msg);
+      }
+      if (!data?.init_point) throw new Error(data?.error || 'No se pudo generar el enlace de pago.');
+      window.location.href = data.init_point;
+    } catch (err) {
+      setError(err.message || 'Error al conectar con MercadoPago.');
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div style={pwCSS.overlay} onClick={onClose}>
+      <div style={pwCSS.card} onClick={e => e.stopPropagation()}>
+        <button style={pwCSS.closeBtn} onClick={onClose}>✕</button>
+
+        <div style={pwCSS.emoji}>🏆</div>
+        <h2 style={pwCSS.title}>Desbloquea tu álbum</h2>
+        <p style={pwCSS.sub}>Guarda tu colección completa en la nube y accede desde cualquier dispositivo.</p>
+
+        <div style={pwCSS.features}>
+          {['✅ Guardar tus láminas', '✅ Los 48 equipos completos', '✅ Sistema de intercambios', '✅ Progreso sincronizado'].map(f => (
+            <div key={f} style={pwCSS.feature}>{f}</div>
+          ))}
+        </div>
+
+        <div style={pwCSS.priceRow}>
+          <span style={pwCSS.price}>$7.000 COP</span>
+          <span style={pwCSS.priceNote}>pago único, para siempre</span>
+        </div>
+
+        {error && <div style={pwCSS.error}>{error}</div>}
+
+        <button style={{...pwCSS.payBtn, opacity: loading ? .7 : 1}} onClick={handleCheckout} disabled={loading}>
+          {loading ? 'Redirigiendo…' : '💳 Pagar con MercadoPago'}
+        </button>
+
+        <button style={pwCSS.skipBtn} onClick={onClose}>Quizás después</button>
+      </div>
+    </div>
+  );
+}
+
+const pwCSS = {
+  overlay:   { position:'fixed', inset:0, background:'rgba(0,0,0,.6)', zIndex:300, display:'flex', alignItems:'center', justifyContent:'center', padding:20 },
+  card:      { background:'var(--surface)', borderRadius:20, padding:'36px 32px', maxWidth:400, width:'100%', position:'relative', border:'1px solid var(--border)', boxShadow:'0 20px 60px rgba(0,0,0,.4)' },
+  closeBtn:  { position:'absolute', top:14, right:16, background:'none', border:'none', color:'var(--text-muted)', fontSize:18, cursor:'pointer', lineHeight:1 },
+  emoji:     { fontSize:52, textAlign:'center', display:'block', marginBottom:12 },
+  title:     { fontSize:22, fontWeight:800, color:'var(--text)', textAlign:'center', margin:'0 0 8px' },
+  sub:       { fontSize:13, color:'var(--text-muted)', textAlign:'center', margin:'0 0 20px', lineHeight:1.6 },
+  features:  { display:'flex', flexDirection:'column', gap:8, marginBottom:24, background:'var(--bg)', borderRadius:12, padding:'14px 16px' },
+  feature:   { fontSize:13, color:'var(--text)', fontWeight:500 },
+  priceRow:  { display:'flex', alignItems:'baseline', justifyContent:'center', gap:8, marginBottom:20 },
+  price:     { fontSize:32, fontWeight:800, color:'var(--green)' },
+  priceNote: { fontSize:12, color:'var(--text-muted)' },
+  error:     { background:'var(--red-bg)', border:'1px solid var(--red-brd)', borderRadius:8, padding:'10px 14px', color:'var(--red)', fontSize:13, marginBottom:14 },
+  payBtn:    { width:'100%', padding:'14px', background:'#009ee3', border:'none', borderRadius:12, color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10, transition:'opacity .2s' },
+  skipBtn:   { width:'100%', padding:'10px', background:'none', border:'none', color:'var(--text-dimmer)', fontSize:13, cursor:'pointer' },
 };
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);

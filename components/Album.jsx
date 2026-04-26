@@ -203,7 +203,10 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
               title={`${isSpecial ? 'FWC' : countryId} ${s.num || s.id.split('-')[1]} — ${s.name}`}>
               {isSpecial
                 ? <span style={{fontSize:14, lineHeight:1}}>🏆</span>
-                : <img src={flagUrl(countryId)} alt="" style={{width:24, height:16, objectFit:'cover', borderRadius:2, border:'1px solid rgba(128,128,128,0.15)'}} />
+                : <div style={dCSS2.stickerIsoBadge}>
+                    <span style={dCSS2.stickerIsoCode}>{team?.id}</span>
+                    <span style={dCSS2.stickerIsoName}>{team?.nameEn}</span>
+                  </div>
               }
               <span style={dCSS2.num}>{s.num || s.id.split('-')[1]}</span>
               {qty >= 1 && <span style={dCSS2.checkMark}>{qty===1 ? '✓' : '⭐'}</span>}
@@ -282,6 +285,9 @@ const dCSS2 = {
   actions:    { display:'flex', gap:10, flexWrap:'wrap' },
   actionGreen:{ padding:'10px 18px', background:'var(--green-bg)', border:'1px solid var(--green-brd)', borderRadius:8, color:'var(--green)', fontSize:13, fontWeight:600, cursor:'pointer' },
   actionRed:  { padding:'10px 18px', background:'var(--red-bg)', border:'1px solid var(--red-brd)', borderRadius:8, color:'var(--red)', fontSize:13, fontWeight:600, cursor:'pointer' },
+  stickerIsoBadge: { display:'flex', flexDirection:'column', alignItems:'center', gap:1 },
+  stickerIsoCode:  { fontSize:10, fontWeight:800, letterSpacing:'0.06em', lineHeight:1 },
+  stickerIsoName:  { fontSize:7, lineHeight:1.2, textAlign:'center', opacity:0.7, maxWidth:72, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
 };
 
 Object.assign(window, { Album, CountryDetail });
