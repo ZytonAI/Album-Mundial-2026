@@ -5,10 +5,16 @@ window.DB = (() => {
   let _pendingUpdates = {};
   let _flushTimer = null;
 
+  const _DEFAULT_URL = 'https://liquqsfnooegfioqkfvt.supabase.co';
+  const _DEFAULT_KEY = 'sb_publishable_aGl6sPl-n4oPgmNuzTEXFg_QTfQex7L';
+
   // ── Config ──────────────────────────────────────────────────────────────────
   function getConfig() {
-    try { return JSON.parse(localStorage.getItem('mona26_config') || '{}'); }
-    catch { return {}; }
+    try {
+      const stored = JSON.parse(localStorage.getItem('mona26_config') || '{}');
+      return { supabaseUrl: _DEFAULT_URL, supabaseKey: _DEFAULT_KEY, ...stored };
+    }
+    catch { return { supabaseUrl: _DEFAULT_URL, supabaseKey: _DEFAULT_KEY }; }
   }
   function saveConfig(cfg) {
     localStorage.setItem('mona26_config', JSON.stringify(cfg));
