@@ -252,6 +252,35 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
           stickerList.forEach(s => { if ((stickers[s.id]||0)>0) applyChange(s.id, 0); });
         }}>🗑 Reiniciar equipo</button>
       </div>
+
+      {/* Instructions */}
+      <div style={dCSS2.instructBox}>
+        <div style={dCSS2.instructTitle}>¿Cómo registrar tus láminas?</div>
+        <div style={dCSS2.instructGrid}>
+          <div style={dCSS2.instructItem}>
+            <span style={{...dCSS2.instructIcon, background:'var(--green-bg)', borderColor:'var(--green-brd)'}}>✓</span>
+            <div>
+              <div style={dCSS2.instructLabel}>1 toque</div>
+              <div style={dCSS2.instructDesc}>Lámina <strong>obtenida</strong> — aparece en verde</div>
+            </div>
+          </div>
+          <div style={dCSS2.instructItem}>
+            <span style={{...dCSS2.instructIcon, background:'var(--gold-bg)', borderColor:'var(--gold-brd)'}}>⭐</span>
+            <div>
+              <div style={dCSS2.instructLabel}>2+ toques</div>
+              <div style={dCSS2.instructDesc}>Lámina <strong>repetida</strong> — se muestra ×2, ×3…</div>
+            </div>
+          </div>
+          <div style={dCSS2.instructItem}>
+            <span style={{...dCSS2.instructIcon, background:'var(--miss-bg)', borderColor:'var(--miss-brd)'}}>−</span>
+            <div>
+              <div style={dCSS2.instructLabel}>Click derecho / mantener</div>
+              <div style={dCSS2.instructDesc}><strong>Quita</strong> una lámina registrada</div>
+            </div>
+          </div>
+        </div>
+        <div style={dCSS2.instructNote}>Aplica igual para todos los países, láminas especiales y Coca-Cola.</div>
+      </div>
     </div>
   );
 }
@@ -315,6 +344,14 @@ const dCSS2 = {
   stickerIsoBadge: { display:'flex', flexDirection:'column', alignItems:'center', gap:1 },
   stickerIsoCode:  { fontSize:10, fontWeight:800, letterSpacing:'0.06em', lineHeight:1 },
   stickerIsoName:  { fontSize:7, lineHeight:1.2, textAlign:'center', opacity:0.7, maxWidth:72, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' },
+  instructBox:     { marginTop:28, padding:'18px 20px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:14, display:'flex', flexDirection:'column', gap:14 },
+  instructTitle:   { fontSize:13, fontWeight:700, color:'var(--text-muted)', textTransform:'uppercase', letterSpacing:'0.06em' },
+  instructGrid:    { display:'flex', flexDirection:'column', gap:12 },
+  instructItem:    { display:'flex', alignItems:'center', gap:14 },
+  instructIcon:    { width:36, height:36, borderRadius:9, border:'1px solid', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, flexShrink:0 },
+  instructLabel:   { fontSize:13, fontWeight:700, color:'var(--text)', marginBottom:2 },
+  instructDesc:    { fontSize:12, color:'var(--text-dim)', lineHeight:1.4 },
+  instructNote:    { fontSize:11, color:'var(--text-dimmer)', borderTop:'1px solid var(--border)', paddingTop:12, marginTop:2 },
 };
 
 Object.assign(window, { Album, CountryDetail });
