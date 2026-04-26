@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Álbum FIFA World Cup 2026</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.js"></script>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script src="data.js?v=6"></script>
+  <script src="db.js"></script>
+  <style>
+    /* ── Theme tokens ──────────────────────────────────────── */
+    :root, [data-theme="dark"] {
+      --bg:          #08111f;
+      --surface:     #0f2040;
+      --surface2:    #0a1628;
+      --surface3:    #132843;
+      --border:      rgba(255,255,255,0.06);
+      --border-md:   rgba(255,255,255,0.10);
+      --text:        #e8f4fd;
+      --text-muted:  #7a9ab8;
+      --text-dim:    #557799;
+      --text-dimmer: #3d5a73;
+      --green:       #00a651;
+      --green-dim:   #006633;
+      --green-bg:    rgba(0,166,81,0.12);
+      --green-brd:   rgba(0,166,81,0.4);
+      --gold:        #f5c518;
+      --gold-bg:     rgba(245,197,24,0.10);
+      --gold-brd:    rgba(245,197,24,0.40);
+      --blue:        #3b82f6;
+      --blue-bg:     rgba(59,130,246,0.10);
+      --blue-brd:    rgba(59,130,246,0.30);
+      --red:         #fc8181;
+      --red-bg:      rgba(229,62,62,0.15);
+      --red-brd:     rgba(229,62,62,0.30);
+      --miss-bg:     rgba(255,255,255,0.02);
+      --miss-brd:    rgba(255,255,255,0.07);
+      --miss-color:  #3d5a73;
+      --input-bg:    #08111f;
+      --shadow:      0 24px 64px rgba(0,0,0,0.5);
+      --logo-filter: none;
+    }
+    [data-theme="light"] {
+      --bg:          #eef2f7;
+      --surface:     #ffffff;
+      --surface2:    #f5f8fc;
+      --surface3:    #e8eef5;
+      --border:      rgba(0,0,0,0.07);
+      --border-md:   rgba(0,0,0,0.12);
+      --text:        #0d1e35;
+      --text-muted:  #4a6885;
+      --text-dim:    #6b8ba8;
+      --text-dimmer: #8aaccc;
+      --green:       #007a3d;
+      --green-dim:   #005228;
+      --green-bg:    rgba(0,122,61,0.08);
+      --green-brd:   rgba(0,122,61,0.30);
+      --gold:        #c09000;
+      --gold-bg:     rgba(192,144,0,0.08);
+      --gold-brd:    rgba(192,144,0,0.30);
+      --blue:        #2563eb;
+      --blue-bg:     rgba(37,99,235,0.08);
+      --blue-brd:    rgba(37,99,235,0.30);
+      --red:         #e53e3e;
+      --red-bg:      rgba(229,62,62,0.10);
+      --red-brd:     rgba(229,62,62,0.20);
+      --miss-bg:     rgba(0,0,0,0.02);
+      --miss-brd:    rgba(0,0,0,0.10);
+      --miss-color:  #8aaccc;
+      --input-bg:    #f0f4f8;
+      --shadow:      0 12px 40px rgba(0,0,0,0.12);
+      --logo-filter: none;
+    }
+
+    /* ── Base ──────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      transition: background .25s, color .25s;
+    }
+    #root { min-height: 100vh; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-md); border-radius: 99px; }
+    button:focus-visible, input:focus-visible { outline: 2px solid var(--green-brd); outline-offset: 2px; }
+    button { transition: filter .15s, background .15s, color .15s; }
+    button:hover:not(:disabled) { filter: brightness(1.1); }
+    input:focus { border-color: var(--green-brd) !important; box-shadow: 0 0 0 3px var(--green-bg) !important; }
+    select:focus { outline: 2px solid var(--green-brd); }
+
+    /* ── Responsive layout ─────────────────────────────────── */
+    @media (max-width: 680px) {
+      .app-sidebar { transform: translateX(-240px); }
+      .app-sidebar.open { transform: translateX(0); box-shadow: 4px 0 32px rgba(0,0,0,0.4); }
+      .app-topbar  { display: flex !important; }
+      .app-main    { margin-left: 0 !important; padding-top: 52px; }
+    }
+
+    /* ── Mobile sticker grid ───────────────────────────────── */
+    @media (max-width: 480px) {
+      .sticker-grid { grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)) !important; gap: 6px !important; }
+      .team-grid    { grid-template-columns: 1fr !important; }
+      .trade-grid   { grid-template-columns: 1fr !important; }
+      .trade-arrow  { display: none !important; }
+      .stats-grid   { grid-template-columns: repeat(3,1fr) !important; }
+      .top-grid     { grid-template-columns: repeat(2,1fr) !important; }
+      .page-enter   { padding: 16px 12px !important; }
+    }
+
+    /* ── Animations ────────────────────────────────────────── */
+    @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
+    @keyframes pulse  { 0%,100%{opacity:1} 50%{opacity:.4} }
+    .page-enter { animation: fadeIn .2s ease both; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel" src="components/Auth.jsx"></script>
+  <script type="text/babel" src="components/Dashboard.jsx"></script>
+  <script type="text/babel" src="components/Album.jsx"></script>
+  <script type="text/babel" src="components/Trades.jsx"></script>
+  <script type="text/babel" src="App.jsx"></script>
+</body>
+</html>
