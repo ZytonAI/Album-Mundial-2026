@@ -174,7 +174,7 @@ function App() {
 
         {/* Promo box — para visitantes y usuarios no-premium */}
         {(!user || !user.isPremium) && (
-          <div style={{padding:'0 16px 8px'}}>
+          <div className="sidebar-promo" style={{padding:'0 16px 8px'}}>
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
               <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
               <div style={{display:'flex', flexDirection:'column', gap:5, marginBottom:12}}>
@@ -197,7 +197,7 @@ function App() {
 
         {/* Badge premium */}
         {user && user.isPremium && (
-          <div style={{padding:'0 16px 8px'}}>
+          <div className="sidebar-promo" style={{padding:'0 16px 8px'}}>
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', gap:10}}>
               <span style={{fontSize:22}}>⭐</span>
               <div>
@@ -209,7 +209,7 @@ function App() {
         )}
 
         {/* Nav */}
-        <nav style={{padding:'8px 10px', flex:1}}>
+        <nav className="sidebar-nav" style={{padding:'8px 10px', flex:1}}>
           {[
             { v:'dashboard', icon:'📊', label:'Resumen' },
             { v:'album',     icon:'📖', label:'Álbum' },
@@ -225,13 +225,13 @@ function App() {
         </nav>
 
         {/* Progress widget */}
-        <div style={{padding:'0 16px 16px'}}>
+        <div className="sidebar-progress" style={{padding:'0 16px 16px'}}>
           <SidebarProgress stickers={stickers} />
         </div>
 
         {/* Bottom actions */}
         {user && (
-          <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
+          <div className="sidebar-logout" style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
             <button style={sCSS.logoutBtn} onClick={handleLogout}>Cerrar sesión</button>
           </div>
         )}
