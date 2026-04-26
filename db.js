@@ -165,6 +165,63 @@ window.DB = (() => {
     catch { return []; }
   }
 
+  // ── Trades ───────────────────────────────────────────────────────────────────
+  async function getTrades() {
+    if (isSupabaseMode()) {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from('trade_logs')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data || []).map(r => ({
+        id: r.id,
+        gave: r.gave,
+        received: r.received,
+        partner: r.partner,
+        date: r.date,
+      }));
+    }
+    try { return JSON.parse(localStorage.getItem('mona26_trade_log') || '[]'); }
+    catch { return []; }
+  }
+
+  async function addTrade(entry) {
+    if (isSupabaseMode()) {
+      const sb = getClient();
+      const { data, error } = await sb
+        .from('trade_logs')
+        .insert({
+          user_id: _user?.id,
+          gave: entry.gave,
+          received: entry.received,
+          partner: entry.partner || null,
+          date: entry.date,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return { ...entry, id: data.id };
+    }
+    const logs = await getTrades();
+    const newLogs = [entry, ...logs].slice(0, 100);
+    localStorage.setItem('mona26_trade_log', JSON.stringify(newLogs));
+    return entry;
+  }
+
+  async function deleteTrade(id) {
+    if (isSupabaseMode()) {
+      const sb = getClient();
+      const { error } = await sb.from('trade_logs').delete().eq('id', id);
+      if (error) throw error;
+      return;
+    }
+    const logs = await getTrades();
+    const updated = logs.filter(l => l.id !== id);
+    localStorage.setItem('mona26_trade_log', JSON.stringify(updated));
+  }
+
   // SQL to show users in setup
   const SETUP_SQL = `-- Ejecuta esto en el SQL Editor de Supabase:
 
@@ -182,6 +239,23 @@ alter table user_stickers enable row level security;
 create policy "Solo mis laminas"
   on user_stickers for all
   using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+create table if not exists trade_logs (
+  id uuid default gen_random_uuid() primary key,
+  user_id uuid references auth.users(id) on delete cascade not null,
+  gave jsonb not null,
+  received jsonb not null,
+  partner text,
+  date text not null,
+  created_at timestamptz default now()
+);
+
+alter table trade_logs enable row level security;
+
+create policy "Solo mis intercambios"
+  on trade_logs for all
+  using (auth.uid() = user_id)
   with check (auth.uid() = user_id);`;
 
   // Flush on tab hide / page close so no pending writes are lost
@@ -190,5 +264,5 @@ create policy "Solo mis laminas"
   });
   window.addEventListener('pagehide', () => flushPending());
 
-  return { getConfig, saveConfig, isSupabaseMode, getClient, register, login, logout, getCurrentUser, loadUserProfile, getStickers, updateSticker, flushPending, SETUP_SQL };
+  return { getConfig, saveConfig, isSupabaseMode, getClient, register, login, logout, getCurrentUser, loadUserProfile, getStickers, updateSticker, flushPending, getTrades, addTrade, deleteTrade, SETUP_SQL };
 })();

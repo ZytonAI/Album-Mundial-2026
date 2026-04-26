@@ -176,10 +176,16 @@ function TradeLog({ stickers, onUpdateSticker }) {
   const [recvTeam,   setRecvTeam]   = useStateTr('');
   const [recvNum,    setRecvNum]    = useStateTr('');
   const [partner,    setPartner]    = useStateTr('');
-  const [logs, setLogs] = useStateTr(() => {
-    try { return JSON.parse(localStorage.getItem('mona26_trade_log')||'[]'); } catch { return []; }
-  });
+  const [logs, setLogs] = useStateTr([]);
+  const [logsLoading, setLogsLoading] = useStateTr(true);
   const [flash, setFlash] = useStateTr('');
+
+  useEffectTr(() => {
+    DB.getTrades()
+      .then(data => setLogs(data))
+      .catch(() => {})
+      .finally(() => setLogsLoading(false));
+  }, []);
 
   function getTeamStickers(teamId) {
     if (teamId === 'FIFA') return SPECIAL_STICKERS.map(s=>({...s,type:'special'}));
@@ -224,7 +230,7 @@ function TradeLog({ stickers, onUpdateSticker }) {
     return giveNum && recvNum && giveNum !== recvNum;
   }
 
-  function registerTrade() {
+  async function registerTrade() {
     if (!canRegister()) return;
     const giveQty = stickers[giveNum]||0;
     const recvQty = stickers[recvNum]||0;
@@ -241,18 +247,26 @@ function TradeLog({ stickers, onUpdateSticker }) {
       partner: partner.trim() || null,
       date: new Date().toLocaleDateString('es-CO', { day:'numeric', month:'short' }),
     };
-    const newLogs = [entry, ...logs].slice(0, 100);
-    setLogs(newLogs);
-    localStorage.setItem('mona26_trade_log', JSON.stringify(newLogs));
+    try {
+      const saved = await DB.addTrade(entry);
+      setLogs(prev => [saved, ...prev].slice(0, 100));
+    } catch {
+      setFlash('❌ Error al guardar el intercambio');
+      setTimeout(() => setFlash(''), 3000);
+      return;
+    }
     setGiveTeam(''); setGiveNum(''); setRecvTeam(''); setRecvNum(''); setPartner('');
     setFlash('✅ Intercambio registrado y colección actualizada');
     setTimeout(() => setFlash(''), 3000);
   }
 
-  function deleteLog(id) {
-    const updated = logs.filter(l => l.id !== id);
-    setLogs(updated);
-    localStorage.setItem('mona26_trade_log', JSON.stringify(updated));
+  async function deleteLog(id) {
+    try {
+      await DB.deleteTrade(id);
+      setLogs(prev => prev.filter(l => l.id !== id));
+    } catch {
+      // silently ignore deletion errors
+    }
   }
 
   const sel = { ...tCSS.select };
@@ -347,7 +361,7 @@ function TradeLog({ stickers, onUpdateSticker }) {
       </div>
 
       {/* Log history */}
-      {logs.length > 0 && (
+      {!logsLoading && logs.length > 0 && (
         <div>
           <h3 style={tCSS.histTitle}>📋 Historial de intercambios</h3>
           <div style={{display:'flex',flexDirection:'column',gap:8}}>
@@ -375,7 +389,8 @@ function TradeLog({ stickers, onUpdateSticker }) {
         </div>
       )}
 
-      {logs.length === 0 && <EmptyTr msg="Aún no has registrado intercambios." />}
+      {logsLoading && <div style={{textAlign:'center', padding:'32px 0', color:'var(--text-dim)', fontSize:13}}>Cargando historial…</div>}
+      {!logsLoading && logs.length === 0 && <EmptyTr msg="Aún no has registrado intercambios." />}
     </div>
   );
 }
