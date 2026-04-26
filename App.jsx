@@ -20,6 +20,8 @@ function App() {
   const [theme,           setTheme]           = useAppState(getStoredTheme);
   const [showPaywall,     setShowPaywall]     = useAppState(false);
   const [successToast,    setSuccessToast]    = useAppState(false);
+  const [checkoutLoading, setCheckoutLoading] = useAppState(false);
+  const [checkoutError,   setCheckoutError]   = useAppState('');
   const userRef = useAppRef(user);
   userRef.current = user;
 
@@ -65,6 +67,30 @@ function App() {
     setView(v);
     if (country) setSelectedCountry(country);
     setMobileOpen(false);
+  }
+
+  async function handleCheckout() {
+    if (!DB.isSupabaseMode()) {
+      setShowPaywall(true);
+      return;
+    }
+    setCheckoutLoading(true);
+    setCheckoutError('');
+    try {
+      const { data, error: fnErr } = await DB.getClient().functions.invoke('create-preference', {
+        body: { user_id: user.id, email: user.email },
+      });
+      if (fnErr) {
+        let msg = fnErr.message;
+        try { const b = await fnErr.context.json(); msg = b?.error || msg; } catch {}
+        throw new Error(msg);
+      }
+      if (!data?.init_point) throw new Error(data?.error || 'No se pudo generar el enlace de pago.');
+      window.location.href = data.init_point;
+    } catch (err) {
+      setCheckoutError(err.message || 'Error al conectar con MercadoPago.');
+      setCheckoutLoading(false);
+    }
   }
 
   const handleUpdateSticker = useAppCallback((id, qty) => {
@@ -130,8 +156,44 @@ function App() {
           )}
         </div>
 
+        {/* Promo box — solo para no-premium, arriba del nav para visibilidad móvil */}
+        {!user?.isPremium && (
+          <div style={{padding:'0 16px 8px'}}>
+            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
+              <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
+              <div style={{display:'flex', flexDirection:'column', gap:5, marginBottom:12}}>
+                {['✅ Guarda tus láminas','✅ Los 48 equipos completos','✅ Sistema de intercambios','✅ Progreso sincronizado'].map(f => (
+                  <div key={f} style={{fontSize:11, color:'var(--text-muted)'}}>{f}</div>
+                ))}
+              </div>
+              <button
+                onClick={handleCheckout}
+                disabled={checkoutLoading}
+                style={{width:'100%', padding:'10px', background:'var(--gold)', border:'none', borderRadius:8, color:'#000', fontSize:13, fontWeight:800, cursor:'pointer', opacity: checkoutLoading ? 0.7 : 1}}>
+                {checkoutLoading ? 'Redirigiendo…' : '💳 Pagar $7.000 COP'}
+              </button>
+              {checkoutError && (
+                <div style={{color:'var(--red)', fontSize:11, marginTop:6, textAlign:'center'}}>{checkoutError}</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Badge premium */}
+        {user?.isPremium && (
+          <div style={{padding:'0 16px 8px'}}>
+            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', gap:10}}>
+              <span style={{fontSize:22}}>⭐</span>
+              <div>
+                <div style={{fontWeight:800, color:'var(--gold)', fontSize:13}}>Premium</div>
+                <div style={{fontSize:10, color:'var(--text-muted)', marginTop:1}}>Álbum completo desbloqueado</div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Nav */}
-        <nav style={{padding:'12px 10px', flex:1}}>
+        <nav style={{padding:'8px 10px', flex:1}}>
           {[
             { v:'dashboard', icon:'📊', label:'Resumen' },
             { v:'album',     icon:'📖', label:'Álbum' },
@@ -150,38 +212,6 @@ function App() {
         <div style={{padding:'0 16px 16px'}}>
           <SidebarProgress stickers={stickers} />
         </div>
-
-        {/* Badge premium */}
-        {user?.isPremium && (
-          <div style={{padding:'0 16px 16px'}}>
-            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', gap:10}}>
-              <span style={{fontSize:22}}>⭐</span>
-              <div>
-                <div style={{fontWeight:800, color:'var(--gold)', fontSize:13}}>Premium</div>
-                <div style={{fontSize:10, color:'var(--text-muted)', marginTop:1}}>Álbum completo desbloqueado</div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Promo box — solo para no-premium */}
-        {!user?.isPremium && (
-          <div style={{padding:'0 16px 16px'}}>
-            <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
-              <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
-              <div style={{display:'flex', flexDirection:'column', gap:5, marginBottom:12}}>
-                {['✅ Guarda tus láminas','✅ Los 48 equipos completos','✅ Sistema de intercambios','✅ Progreso sincronizado'].map(f => (
-                  <div key={f} style={{fontSize:11, color:'var(--text-muted)'}}>{f}</div>
-                ))}
-              </div>
-              <button
-                onClick={() => setShowPaywall(true)}
-                style={{width:'100%', padding:'10px', background:'var(--gold)', border:'none', borderRadius:8, color:'#000', fontSize:13, fontWeight:800, cursor:'pointer'}}>
-                💳 Pagar $7.000 COP
-              </button>
-            </div>
-          </div>
-        )}
 
         {/* Bottom actions */}
         <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
@@ -270,9 +300,9 @@ function PaywallModal({ user, onClose }) {
   const [loading, setLoading] = useAppState(false);
   const [error, setError]     = useAppState('');
 
-  async function handleCheckout() {
+  async function handlePay() {
     if (!DB.isSupabaseMode()) {
-      setError('Necesitas una cuenta de Supabase para procesar pagos.');
+      setError('Necesitas una cuenta para procesar pagos.');
       return;
     }
     setLoading(true);
@@ -316,7 +346,7 @@ function PaywallModal({ user, onClose }) {
 
         {error && <div style={pwCSS.error}>{error}</div>}
 
-        <button style={{...pwCSS.payBtn, opacity: loading ? .7 : 1}} onClick={handleCheckout} disabled={loading}>
+        <button style={{...pwCSS.payBtn, opacity: loading ? .7 : 1}} onClick={handlePay} disabled={loading}>
           {loading ? 'Redirigiendo…' : '💳 Pagar con MercadoPago'}
         </button>
 
