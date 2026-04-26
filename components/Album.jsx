@@ -3,7 +3,7 @@ const { useState: useAlbumState, useMemo: useAlbumMemo } = React;
 
 // ── Countries Grid ───────────────────────────────────────────────────────────
 function Album({ stickers, onSelectCountry }) {
-  const { TEAMS, CONFS, CONF_NAMES, teamStickers, SPECIAL_STICKERS, flagUrl } = ALBUM_DATA;
+  const { TEAMS, CONFS, CONF_NAMES, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, flagUrl } = ALBUM_DATA;
   const [search, setSearch]         = useAlbumState('');
   const [activeConf, setActiveConf] = useAlbumState('ALL');
 
@@ -18,7 +18,8 @@ function Album({ stickers, onSelectCountry }) {
     return m;
   }, [stickers]);
 
-  const specialOwned = SPECIAL_STICKERS.filter(s => (stickers[s.id]||0) >= 1).length;
+  const specialOwned   = SPECIAL_STICKERS.filter(s => (stickers[s.id]||0) >= 1).length;
+  const cocacolaOwned  = COCACOLA_STICKERS.filter(s => (stickers[s.id]||0) >= 1).length;
 
   const filtered = TEAMS.filter(t =>
     t.name.toLowerCase().includes(search.toLowerCase()) &&
@@ -59,6 +60,23 @@ function Album({ stickers, onSelectCountry }) {
               <div style={aCSS.miniBarWrap}><div style={{...aCSS.miniBarFill, width:`${Math.round(specialOwned/SPECIAL_STICKERS.length*100)}%`}} /></div>
             </div>
             <TeamCount owned={specialOwned} total={SPECIAL_STICKERS.length} pct={Math.round(specialOwned/SPECIAL_STICKERS.length*100)} />
+          </button>
+        </div>
+      )}
+
+      {/* Coca-Cola section */}
+      {activeConf === 'ALL' && !search && (
+        <div style={aCSS.section}>
+          <div style={aCSS.secHeader}>
+            <span style={aCSS.secLabel}>🥤 Coca-Cola</span>
+          </div>
+          <button style={{...aCSS.teamCard, maxWidth:300}} onClick={() => onSelectCountry('COCACOLA')}>
+            <span style={{fontSize:32}}>🥤</span>
+            <div style={{flex:1}}>
+              <div style={aCSS.teamName}>Coca-Cola</div>
+              <div style={aCSS.miniBarWrap}><div style={{...aCSS.miniBarFill, width:`${Math.round(cocacolaOwned/COCACOLA_STICKERS.length*100)}%`}} /></div>
+            </div>
+            <TeamCount owned={cocacolaOwned} total={COCACOLA_STICKERS.length} pct={Math.round(cocacolaOwned/COCACOLA_STICKERS.length*100)} />
           </button>
         </div>
       )}
@@ -105,11 +123,14 @@ function TeamCount({ owned, total, pct, done }) {
 
 // ── Country Detail with Undo/Redo ────────────────────────────────────────────
 function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
-  const { TEAMS, teamStickers, SPECIAL_STICKERS, flagUrl } = ALBUM_DATA;
+  const { TEAMS, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, flagUrl } = ALBUM_DATA;
   const isSpecial  = countryId === 'FIFA_SPECIAL';
+  const isCocacola = countryId === 'COCACOLA';
   const team       = TEAMS.find(t => t.id === countryId);
   const stickerList = isSpecial
     ? SPECIAL_STICKERS.map(s => ({ ...s, type:'special' }))
+    : isCocacola
+    ? COCACOLA_STICKERS.map(s => ({ ...s, type:'cocacola' }))
     : (teamStickers[countryId] || []);
 
   // ── Undo/Redo history ──────────────────────────────────────
@@ -171,10 +192,12 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
         <div style={dCSS2.titleRow}>
           {isSpecial
             ? <span style={{fontSize:48}}>🏆</span>
+            : isCocacola
+            ? <span style={{fontSize:48}}>🥤</span>
             : <img src={flagUrl(countryId)} alt={team?.name} style={{width:64, height:44, objectFit:'cover', borderRadius:6, border:'1px solid rgba(128,128,128,0.2)'}} />
           }
           <div>
-            <h2 style={dCSS2.title}>{isSpecial ? 'Láminas Especiales' : team?.name}</h2>
+            <h2 style={dCSS2.title}>{isSpecial ? 'Láminas Especiales' : isCocacola ? 'Coca-Cola' : team?.name}</h2>
             <p style={dCSS2.hint}>Click izquierdo = agregar &nbsp;·&nbsp; Click derecho = quitar</p>
           </div>
         </div>
@@ -200,9 +223,13 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
               style={{...dCSS2.card, ...dCSS2[state]}}
               onClick={() => handleClick(s)}
               onContextMenu={e => handleRightClick(e, s)}
-              title={`${isSpecial ? 'FWC' : countryId} ${s.num || s.id.split('-')[1]} — ${s.name}`}>
+              title={`${isSpecial ? 'FWC' : isCocacola ? 'CC' : countryId} ${s.num || s.id.split('-')[1]} — ${s.name}`}>
               {isSpecial
                 ? <span style={{fontSize:14, lineHeight:1}}>🏆</span>
+                : isCocacola
+                ? <div style={dCSS2.stickerIsoBadge}>
+                    <span style={dCSS2.stickerIsoCode}>CC</span>
+                  </div>
                 : <div style={dCSS2.stickerIsoBadge}>
                     <span style={dCSS2.stickerIsoCode}>{team?.id}</span>
                     <span style={dCSS2.stickerIsoName}>{team?.nameEn}</span>

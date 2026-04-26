@@ -66,6 +66,13 @@ window.ALBUM_DATA = (() => {
     num:  i + 1,
   }));
 
+  // Coca-Cola — 14 láminas, prefijo CC
+  const COCACOLA_STICKERS = Array.from({ length: 14 }, (_, i) => ({
+    id:   `CC-${String(i+1).padStart(2,'0')}`,
+    name: `CC ${i+1}`,
+    num:  i + 1,
+  }));
+
   // 20 láminas por equipo: 1=Escudo, 2-12=Jugadores 1-11, 13=Foto Grupal, 14-20=Jugadores 12-18
   function generateTeamStickers(team) {
     const list = [];
@@ -84,6 +91,7 @@ window.ALBUM_DATA = (() => {
 
   const ALL_STICKERS = [
     ...SPECIAL_STICKERS.map(s => ({ ...s, type: 'special' })),
+    ...COCACOLA_STICKERS.map(s => ({ ...s, type: 'cocacola' })),
     ...Object.values(teamStickers).flat(),
   ];
 
@@ -116,5 +124,5 @@ window.ALBUM_DATA = (() => {
     UEFA:        'Europa',
   };
 
-  return { TEAMS, SPECIAL_STICKERS, teamStickers, ALL_STICKERS, CONFS, CONF_NAMES, FLAG_CODE, flagUrl, TOTAL: ALL_STICKERS.length };
+  return { TEAMS, SPECIAL_STICKERS, COCACOLA_STICKERS, teamStickers, ALL_STICKERS, CONFS, CONF_NAMES, FLAG_CODE, flagUrl, TOTAL: ALL_STICKERS.length };
 })();
