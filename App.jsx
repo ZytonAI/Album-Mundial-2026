@@ -172,8 +172,8 @@ function App() {
           </div>
         )}
 
-        {/* Promo box — solo para usuarios logueados no-premium */}
-        {user && !user.isPremium && (
+        {/* Promo box — para visitantes y usuarios no-premium */}
+        {(!user || !user.isPremium) && (
           <div style={{padding:'0 16px 8px'}}>
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
               <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
