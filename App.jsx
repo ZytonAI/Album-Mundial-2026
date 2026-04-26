@@ -22,6 +22,7 @@ function App() {
   const [successToast,    setSuccessToast]    = useAppState(false);
   const [checkoutLoading, setCheckoutLoading] = useAppState(false);
   const [checkoutError,   setCheckoutError]   = useAppState('');
+  const [authInitialMode, setAuthInitialMode] = useAppState('login');
   const userRef = useAppRef(user);
   userRef.current = user;
 
@@ -47,7 +48,7 @@ function App() {
           setTimeout(() => setSuccessToast(false), 5000);
         }
       } else {
-        setView('auth');
+        setView('dashboard');
       }
     });
   }, []);
@@ -60,7 +61,7 @@ function App() {
 
   async function handleLogout() {
     await DB.logout();
-    setUser(null); setStickers({}); setView('auth');
+    setUser(null); setStickers({}); setView('dashboard');
   }
 
   function navigate(v, country) {
@@ -109,7 +110,7 @@ function App() {
     </div>
   );
 
-  if (view === 'auth') return <Auth onLogin={handleLogin} />;
+  if (view === 'auth') return <Auth onLogin={handleLogin} initialMode={authInitialMode} onCancel={() => setView('dashboard')} />;
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'Coleccionista';
 
@@ -137,27 +138,42 @@ function App() {
           </button>
         </div>
 
-        {/* User chip */}
-        <div style={sCSS.userChip}>
-          <div style={sCSS.avatar}>{displayName[0].toUpperCase()}</div>
-          <div style={{minWidth:0}}>
-            <div style={{color:'var(--text)', fontWeight:600, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{displayName}</div>
-            <div style={{color:'var(--text-dimmer)', fontSize:10, marginTop:2}}>
-              {user?.isPremium ? '⭐ Premium' : DB.isSupabaseMode() ? '☁️ Supabase' : '💾 Local'}
+        {/* User chip / Auth buttons */}
+        {user ? (
+          <div style={sCSS.userChip}>
+            <div style={sCSS.avatar}>{displayName[0].toUpperCase()}</div>
+            <div style={{minWidth:0}}>
+              <div style={{color:'var(--text)', fontWeight:600, fontSize:13, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>{displayName}</div>
+              <div style={{color:'var(--text-dimmer)', fontSize:10, marginTop:2}}>
+                {user.isPremium ? '⭐ Premium' : DB.isSupabaseMode() ? '☁️ Supabase' : '💾 Local'}
+              </div>
             </div>
+            {!user.isPremium && (
+              <button
+                onClick={() => setShowPaywall(true)}
+                style={{marginLeft:'auto', padding:'3px 8px', background:'var(--gold)', border:'none', borderRadius:6, color:'#000', fontSize:10, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0}}
+                title="Desbloquear álbum completo">
+                $7.000
+              </button>
+            )}
           </div>
-          {!user?.isPremium && (
+        ) : (
+          <div style={{padding:'0 16px 12px', display:'flex', flexDirection:'column', gap:8}}>
             <button
-              onClick={() => setShowPaywall(true)}
-              style={{marginLeft:'auto', padding:'3px 8px', background:'var(--gold)', border:'none', borderRadius:6, color:'#000', fontSize:10, fontWeight:700, cursor:'pointer', whiteSpace:'nowrap', flexShrink:0}}
-              title="Desbloquear álbum completo">
-              $7.000
+              onClick={() => { setAuthInitialMode('login'); setView('auth'); }}
+              style={sCSS.authBtn}>
+              Iniciar sesión
             </button>
-          )}
-        </div>
+            <button
+              onClick={() => { setAuthInitialMode('register'); setView('auth'); }}
+              style={sCSS.authBtnSecondary}>
+              Crear cuenta
+            </button>
+          </div>
+        )}
 
-        {/* Promo box — solo para no-premium, arriba del nav para visibilidad móvil */}
-        {!user?.isPremium && (
+        {/* Promo box — solo para usuarios logueados no-premium */}
+        {user && !user.isPremium && (
           <div style={{padding:'0 16px 8px'}}>
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'14px'}}>
               <div style={{fontWeight:800, color:'var(--text)', fontSize:13, marginBottom:8}}>🏆 Desbloquea el álbum</div>
@@ -180,7 +196,7 @@ function App() {
         )}
 
         {/* Badge premium */}
-        {user?.isPremium && (
+        {user && user.isPremium && (
           <div style={{padding:'0 16px 8px'}}>
             <div style={{background:'var(--gold-bg)', border:'1px solid var(--gold-brd)', borderRadius:12, padding:'12px 14px', display:'flex', alignItems:'center', gap:10}}>
               <span style={{fontSize:22}}>⭐</span>
@@ -214,9 +230,11 @@ function App() {
         </div>
 
         {/* Bottom actions */}
-        <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
-          <button style={sCSS.logoutBtn} onClick={handleLogout}>Cerrar sesión</button>
-        </div>
+        {user && (
+          <div style={{padding:'0 16px', display:'flex', flexDirection:'column', gap:6}}>
+            <button style={sCSS.logoutBtn} onClick={handleLogout}>Cerrar sesión</button>
+          </div>
+        )}
       </aside>
 
       {/* ── Mobile top bar ────────────────────────────────── */}
@@ -287,7 +305,9 @@ const sCSS = {
   avatar:     { width:32, height:32, borderRadius:'50%', background:'var(--green)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, fontSize:14, flexShrink:0 },
   navBtn:     { display:'flex', alignItems:'center', gap:12, width:'100%', padding:'10px 12px', background:'none', border:'none', borderRadius:10, color:'var(--text-muted)', fontSize:14, cursor:'pointer', marginBottom:2, fontWeight:500 },
   navActive:  { background:'var(--green-bg)', color:'var(--green)', fontWeight:700 },
-  logoutBtn:  { padding:'9px 12px', background:'none', border:'none', borderRadius:8, color:'var(--text-dimmer)', fontSize:13, cursor:'pointer', textAlign:'left', marginBottom:8 },
+  logoutBtn:      { padding:'9px 12px', background:'none', border:'none', borderRadius:8, color:'var(--text-dimmer)', fontSize:13, cursor:'pointer', textAlign:'left', marginBottom:8 },
+  authBtn:        { padding:'10px 14px', background:'var(--green)', border:'none', borderRadius:10, color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' },
+  authBtnSecondary: { padding:'10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:13, fontWeight:600, cursor:'pointer' },
   topBar:     { display:'none', position:'fixed', top:0, left:0, right:0, height:52, background:'var(--surface2)', borderBottom:'1px solid var(--border)', zIndex:99, alignItems:'center', justifyContent:'space-between', padding:'0 16px' },
   menuBtn:    { background:'none', border:'none', color:'var(--text)', fontSize:20, cursor:'pointer', width:36 },
   overlay:    { position:'fixed', inset:0, background:'rgba(0,0,0,.55)', zIndex:99 },

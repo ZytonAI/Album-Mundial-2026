@@ -1,8 +1,8 @@
 // components/Auth.jsx
 const { useState: useAuthState } = React;
 
-function Auth({ onLogin }) {
-  const [mode, setMode] = useAuthState('login');
+function Auth({ onLogin, initialMode = 'login', onCancel }) {
+  const [mode, setMode] = useAuthState(initialMode);
   const [email, setEmail] = useAuthState('');
   const [password, setPassword] = useAuthState('');
   const [name, setName] = useAuthState('');
@@ -25,6 +25,9 @@ function Auth({ onLogin }) {
   return (
     <div style={s.overlay}>
       <div style={s.card}>
+        {onCancel && (
+          <button onClick={onCancel} style={s.backBtn}>← Explorar álbum</button>
+        )}
         <div style={s.header}>
           <span style={s.trophy}>🏆</span>
           <h1 style={s.title}>Álbum del Mundial</h1>
@@ -93,6 +96,7 @@ const authCSS = {
   error:   { background:'var(--red-bg)', border:'1px solid var(--red-brd)', borderRadius:8, padding:'10px 14px', color:'var(--red)', fontSize:13 },
   btn:     { padding:13, background:'var(--green)', border:'none', borderRadius:10, color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginTop:4 },
   localNote:{ marginTop:20, fontSize:12, color:'var(--text-dim)', textAlign:'center', lineHeight:1.5 },
+  backBtn:  { background:'none', border:'none', color:'var(--text-muted)', fontSize:13, cursor:'pointer', padding:'0 0 16px', display:'block' },
 };
 
 Object.assign(window, { Auth });
