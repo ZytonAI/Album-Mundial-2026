@@ -127,6 +127,7 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
   const isSpecial  = countryId === 'FIFA_SPECIAL';
   const isCocacola = countryId === 'COCACOLA';
   const team       = TEAMS.find(t => t.id === countryId);
+  const isMobile   = window.matchMedia('(pointer: coarse)').matches;
   const stickerList = isSpecial
     ? SPECIAL_STICKERS.map(s => ({ ...s, type:'special' }))
     : isCocacola
@@ -274,8 +275,11 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
           <div style={dCSS2.instructItem}>
             <span style={{...dCSS2.instructIcon, background:'var(--miss-bg)', borderColor:'var(--miss-brd)'}}>−</span>
             <div>
-              <div style={dCSS2.instructLabel}>Click derecho / mantener</div>
-              <div style={dCSS2.instructDesc}><strong>Quita</strong> una lámina registrada</div>
+              <div style={dCSS2.instructLabel}>{isMobile ? 'Botón Deshacer' : 'Click derecho / mantener'}</div>
+              <div style={dCSS2.instructDesc}>{isMobile
+                ? <>Toca <strong>Deshacer</strong> para revertir la última acción</>
+                : <><strong>Quita</strong> una lámina con click derecho</>
+              }</div>
             </div>
           </div>
         </div>
