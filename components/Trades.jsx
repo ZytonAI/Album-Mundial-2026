@@ -16,7 +16,7 @@ function getStickerLabel(id) {
 // ── Main Component ───────────────────────────────────────────────────────────
 function Trades({ stickers, onUpdateSticker }) {
   const { TEAMS, teamStickers, SPECIAL_STICKERS } = ALBUM_DATA;
-  const [tab, setTab] = useStateTr('suggestions'); // suggestions | offer | want | log
+  const [tab, setTab] = useStateTr('log'); // log | suggestions | offer | want
 
   // ── Computed analysis ─────────────────────────────────────
   const analysis = useMemoTr(() => {
@@ -45,7 +45,7 @@ function Trades({ stickers, onUpdateSticker }) {
         .filter(x => x.extras.length > 0)
         .slice(0,3);
       if (offerFrom.length)
-        suggestions.push({ want:{team:wantTeam, count:missing.length, examples:missing.slice(0,3)}, offer:offerFrom.map(({team,extras})=>({team,count:extras.length})) });
+        suggestions.push({ want:{team:wantTeam, count:missing.length, examples:missing.slice(0,3)}, offer:offerFrom.map(({team,extras})=>({team,count:extras.length,nums:extras.slice(0,6)})) });
     });
     return { offer, want, suggestions: suggestions.slice(0,10) };
   }, [stickers]);
@@ -79,7 +79,7 @@ function Trades({ stickers, onUpdateSticker }) {
 
       {/* Tabs */}
       <div style={tCSS.tabs}>
-        {[['suggestions','💡 Sugerencias'],['offer','🟡 Mis repetidas'],['want','🔵 Me faltan'],['log','📝 Registrar']].map(([v,l]) => (
+        {[['log','📝 Registrar'],['suggestions','💡 Sugerencias'],['offer','🟡 Mis repetidas'],['want','🔵 Me faltan']].map(([v,l]) => (
           <button key={v} style={{...tCSS.tab, ...(tab===v?tCSS.tabActive:{})}} onClick={()=>setTab(v)}>{l}</button>
         ))}
       </div>
@@ -106,11 +106,19 @@ function Trades({ stickers, onUpdateSticker }) {
                     <div style={tCSS.arrow}>⇄</div>
                     <div style={tCSS.sugSide}>
                       <div style={tCSS.sugLabel}>🟡 Puedes dar</div>
-                      {sug.offer.map(({team,count}) => (
-                        <div key={team.id} style={tCSS.offerItem}>
-                          <span style={{fontSize:16}}>{team.flag}</span>
-                          <span style={{color:'var(--text)',fontSize:13,flex:1}}>{team.name}</span>
-                          <span style={tCSS.offerBadge}>×{count}</span>
+                      {sug.offer.map(({team,count,nums}) => (
+                        <div key={team.id} style={{...tCSS.offerItem, flexWrap:'wrap', marginBottom:10}}>
+                          <div style={{display:'flex',alignItems:'center',gap:6,width:'100%'}}>
+                            <span style={{fontSize:16}}>{team.flag}</span>
+                            <span style={{color:'var(--text)',fontSize:13,flex:1}}>{team.name}</span>
+                            <span style={tCSS.offerBadge}>×{count}</span>
+                          </div>
+                          <div style={{display:'flex',flexWrap:'wrap',gap:4,marginTop:5}}>
+                            {nums.map(s => (
+                              <span key={s.id} style={tCSS.numChip}>#{String(s.num).padStart(2,'0')}</span>
+                            ))}
+                            {count > 6 && <span style={tCSS.numChip}>…</span>}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -398,6 +406,7 @@ const tCSS = {
   exNames:    { color:'var(--text-dim)', fontSize:11, marginTop:4, lineHeight:1.5 },
   offerItem:  { display:'flex', alignItems:'center', gap:8, marginBottom:6 },
   offerBadge: { background:'var(--gold-bg)', color:'var(--gold)', fontSize:11, fontWeight:700, borderRadius:99, padding:'2px 8px', border:'1px solid var(--gold-brd)' },
+  numChip:    { background:'var(--surface2)', color:'var(--gold)', fontSize:11, fontWeight:700, borderRadius:6, padding:'2px 6px', border:'1px solid var(--gold-brd)' },
   group:      { marginBottom:20 },
   groupHeader:{ display:'flex', alignItems:'center', gap:10, marginBottom:10, paddingBottom:8, borderBottom:'1px solid var(--border)' },
   chipList:   { display:'flex', flexWrap:'wrap', gap:6 },
