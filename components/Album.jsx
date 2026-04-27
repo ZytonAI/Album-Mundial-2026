@@ -6,6 +6,7 @@ function Album({ stickers, onSelectCountry }) {
   const { TEAMS, CONFS, CONF_NAMES, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, flagUrl } = ALBUM_DATA;
   const [search, setSearch]         = useAlbumState('');
   const [activeConf, setActiveConf] = useAlbumState('ALL');
+  const [sortMode, setSortMode]     = useAlbumState('conf');
 
   const teamStats = useAlbumMemo(() => {
     const m = {};
@@ -32,6 +33,8 @@ function Album({ stickers, onSelectCountry }) {
     return acc;
   }, {});
 
+  const sortedAZ = [...filtered].sort((a, b) => a.name.localeCompare(b.name, 'es'));
+
   return (
     <div style={aCSS.page} className="page-enter">
       <h2 style={aCSS.heading}>Álbum FIFA World Cup 2026™</h2>
@@ -44,6 +47,15 @@ function Album({ stickers, onSelectCountry }) {
               {c==='ALL' ? 'Todos' : CONF_NAMES[c] || c}
             </button>
           ))}
+        </div>
+        <div style={aCSS.sortRow}>
+          <span style={aCSS.sortLabel}>Orden:</span>
+          <button style={{...aCSS.sortBtn, ...(sortMode==='conf' ? aCSS.sortBtnActive : {})}} onClick={() => setSortMode('conf')}>
+            🌍 Por continentes
+          </button>
+          <button style={{...aCSS.sortBtn, ...(sortMode==='az' ? aCSS.sortBtnActive : {})}} onClick={() => setSortMode('az')}>
+            🔤 A-Z
+          </button>
         </div>
       </div>
 
@@ -81,34 +93,48 @@ function Album({ stickers, onSelectCountry }) {
         </div>
       )}
 
-      {/* Team groups */}
-      {Object.entries(grouped).map(([conf, teams]) => (
+      {/* Team groups — By confederation */}
+      {sortMode === 'conf' && Object.entries(grouped).map(([conf, teams]) => (
         <div key={conf} style={aCSS.section}>
           <div style={aCSS.secHeader}>
             <span style={aCSS.secLabel}>{CONF_NAMES[conf] || conf}</span>
             <span style={{color:'var(--text-dimmer)', fontSize:11}}>{teams.length} selecciones</span>
           </div>
           <div style={aCSS.grid} className="team-grid">
-            {teams.map(team => {
-              const s = teamStats[team.id];
-              const done = s.pct === 100;
-              return (
-                <button key={team.id} style={{...aCSS.teamCard, ...(done ? aCSS.teamDone : {})}} onClick={() => onSelectCountry(team.id)}>
-                  <img src={flagUrl(team.id)} alt={team.name} style={{width:32, height:22, objectFit:'cover', borderRadius:3, flexShrink:0, border:'1px solid rgba(128,128,128,0.2)'}} />
-                  <div style={{flex:1, minWidth:0}}>
-                    <div style={aCSS.teamName}>{team.name}</div>
-                    <div style={aCSS.miniBarWrap}><div style={{...aCSS.miniBarFill, width:`${s.pct}%`, background: done ? 'var(--gold)' : 'var(--green)'}} /></div>
-                  </div>
-                  <TeamCount owned={s.owned} total={s.total} pct={s.pct} done={done} />
-                  {s.dups > 0 && <span style={aCSS.dupBadge}>+{s.dups}</span>}
-                  {done && <span style={{position:'absolute', top:6, right:8, color:'var(--gold)', fontSize:14}}>✓</span>}
-                </button>
-              );
-            })}
+            {teams.map(team => <TeamCard key={team.id} team={team} s={teamStats[team.id]} flagUrl={flagUrl} onSelect={onSelectCountry} />)}
           </div>
         </div>
       ))}
+
+      {/* Team list — A-Z */}
+      {sortMode === 'az' && (
+        <div style={aCSS.section}>
+          <div style={aCSS.secHeader}>
+            <span style={aCSS.secLabel}>Todos los países (A-Z)</span>
+            <span style={{color:'var(--text-dimmer)', fontSize:11}}>{sortedAZ.length} selecciones</span>
+          </div>
+          <div style={aCSS.grid} className="team-grid">
+            {sortedAZ.map(team => <TeamCard key={team.id} team={team} s={teamStats[team.id]} flagUrl={flagUrl} onSelect={onSelectCountry} />)}
+          </div>
+        </div>
+      )}
     </div>
+  );
+}
+
+function TeamCard({ team, s, flagUrl, onSelect }) {
+  const done = s.pct === 100;
+  return (
+    <button style={{...aCSS.teamCard, ...(done ? aCSS.teamDone : {})}} onClick={() => onSelect(team.id)}>
+      <img src={flagUrl(team.id)} alt={team.name} style={{width:32, height:22, objectFit:'cover', borderRadius:3, flexShrink:0, border:'1px solid rgba(128,128,128,0.2)'}} />
+      <div style={{flex:1, minWidth:0}}>
+        <div style={aCSS.teamName}>{team.name}</div>
+        <div style={aCSS.miniBarWrap}><div style={{...aCSS.miniBarFill, width:`${s.pct}%`, background: done ? 'var(--gold)' : 'var(--green)'}} /></div>
+      </div>
+      <TeamCount owned={s.owned} total={s.total} pct={s.pct} done={done} />
+      {s.dups > 0 && <span style={aCSS.dupBadge}>+{s.dups}</span>}
+      {done && <span style={{position:'absolute', top:6, right:8, color:'var(--gold)', fontSize:14}}>✓</span>}
+    </button>
   );
 }
 
@@ -321,6 +347,10 @@ const aCSS = {
   miniBarWrap:{ height:3, background:'var(--border)', borderRadius:99, overflow:'hidden' },
   miniBarFill:{ height:'100%', background:'var(--green)', borderRadius:99, transition:'width .4s' },
   dupBadge:   { position:'absolute', top:6, right:28, background:'var(--gold)', color:'#000', fontSize:10, fontWeight:700, borderRadius:99, padding:'1px 6px' },
+  sortRow:    { display:'flex', alignItems:'center', gap:8 },
+  sortLabel:  { fontSize:12, color:'var(--text-muted)', fontWeight:600 },
+  sortBtn:    { padding:'5px 12px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:99, color:'var(--text-muted)', fontSize:12, cursor:'pointer', fontWeight:500 },
+  sortBtnActive: { background:'var(--blue,#2563eb)', color:'#fff', borderColor:'var(--blue,#2563eb)', fontWeight:700 },
 };
 
 const dCSS2 = {
