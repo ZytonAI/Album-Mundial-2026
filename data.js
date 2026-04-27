@@ -59,11 +59,11 @@ window.ALBUM_DATA = (() => {
     { id: 'TUR', name: 'Turquía',              nameEn: 'Türkiye',                  conf: 'UEFA' },
   ];
 
-  // Especiales FIFA — 20 láminas, solo numeradas
+  // Especiales FIFA — 20 láminas, numeradas 00–19
   const SPECIAL_STICKERS = Array.from({ length: 20 }, (_, i) => ({
-    id:   `FWC-${String(i+1).padStart(2,'0')}`,
-    name: `FWC ${i+1}`,
-    num:  i + 1,
+    id:   `FWC-${String(i).padStart(2,'0')}`,
+    name: `FWC ${String(i).padStart(2,'0')}`,
+    num:  i,
   }));
 
   // Coca-Cola — 14 láminas, prefijo CC

@@ -5,7 +5,7 @@ const { useMemo: useMemoTr, useState: useStateTr, useEffect: useEffectTr } = Rea
 function getStickerLabel(id) {
   const { TEAMS, teamStickers, SPECIAL_STICKERS } = ALBUM_DATA;
   const spec = SPECIAL_STICKERS.find(s => s.id === id);
-  if (spec) return { num: `FWC ${spec.num}`, name: spec.name, team: 'FIFA / Intro', teamId: 'FIFA' };
+  if (spec) return { num: `FWC ${String(spec.num).padStart(2,'0')}`, name: spec.name, team: 'FIFA / Intro', teamId: 'FIFA' };
   for (const t of TEAMS) {
     const found = (teamStickers[t.id]||[]).find(s => s.id === id);
     if (found) return { num: `${t.id} ${found.num}`, name: found.name, team: t.name, teamId: t.id };
@@ -296,7 +296,7 @@ function TradeLog({ stickers, onUpdateSticker }) {
                 <option value="">— Selecciona lámina —</option>
                 {giveStickers.map(s => (
                   <option key={s.id} value={s.id}>
-                    {giveTeam === 'FIFA' ? `FWC ${s.num}` : `${giveTeam} ${s.num}`} — {s.name} (×{stickers[s.id]||0})
+                    {giveTeam === 'FIFA' ? `FWC ${String(s.num).padStart(2,'0')}` : `${giveTeam} ${s.num}`} — {s.name} (×{stickers[s.id]||0})
                   </option>
                 ))}
               </select>
@@ -329,7 +329,7 @@ function TradeLog({ stickers, onUpdateSticker }) {
                 <option value="">— Selecciona lámina —</option>
                 {recvStickers.map(s => (
                   <option key={s.id} value={s.id}>
-                    {recvTeam === 'FIFA' ? `FWC ${s.num}` : `${recvTeam} ${s.num}`} — {s.name}
+                    {recvTeam === 'FIFA' ? `FWC ${String(s.num).padStart(2,'0')}` : `${recvTeam} ${s.num}`} — {s.name}
                   </option>
                 ))}
               </select>
