@@ -177,17 +177,6 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
       <div style={dCSS2.header}>
         <div style={dCSS2.navRow}>
           <button style={dCSS2.backBtn} onClick={onBack}>← Volver al álbum</button>
-          {/* Undo / Redo */}
-          <div style={dCSS2.undoRow}>
-            <button style={{...dCSS2.undoBtn, opacity: canUndo ? 1 : .3, cursor: canUndo ? 'pointer' : 'default'}}
-              onClick={undo} disabled={!canUndo} title="Deshacer último cambio">
-              ↩ Deshacer
-            </button>
-            <button style={{...dCSS2.undoBtn, opacity: canRedo ? 1 : .3, cursor: canRedo ? 'pointer' : 'default'}}
-              onClick={redo} disabled={!canRedo} title="Rehacer">
-              Rehacer ↪
-            </button>
-          </div>
         </div>
 
         <div style={dCSS2.titleRow}>
@@ -254,6 +243,18 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
         <button style={dCSS2.actionRed} onClick={() => {
           stickerList.forEach(s => { if ((stickers[s.id]||0)>0) applyChange(s.id, 0); });
         }}>🗑 Reiniciar equipo</button>
+      </div>
+
+      {/* Undo / Redo */}
+      <div style={dCSS2.undoRow}>
+        <button style={{...dCSS2.undoBtn, opacity: canUndo ? 1 : .35, cursor: canUndo ? 'pointer' : 'default'}}
+          onClick={undo} disabled={!canUndo} title="Deshacer último cambio">
+          ↩ Deshacer
+        </button>
+        <button style={{...dCSS2.undoBtn, opacity: canRedo ? 1 : .35, cursor: canRedo ? 'pointer' : 'default'}}
+          onClick={redo} disabled={!canRedo} title="Rehacer">
+          Rehacer ↪
+        </button>
       </div>
 
       {/* Instructions */}
@@ -325,8 +326,8 @@ const dCSS2 = {
   header:     { marginBottom:24 },
   navRow:     { display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:12 },
   backBtn:    { background:'none', border:'none', color:'var(--text-muted)', fontSize:14, cursor:'pointer', padding:0 },
-  undoRow:    { display:'flex', gap:8 },
-  undoBtn:    { padding:'6px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:8, color:'var(--text-muted)', fontSize:12, cursor:'pointer', fontWeight:600, transition:'opacity .2s' },
+  undoRow:    { display:'flex', gap:10, flexWrap:'wrap', marginTop:10 },
+  undoBtn:    { padding:'10px 18px', background:'var(--surface)', border:'1.5px solid var(--border-md)', borderRadius:8, color:'var(--text)', fontSize:13, cursor:'pointer', fontWeight:600, transition:'opacity .2s' },
   titleRow:   { display:'flex', alignItems:'center', gap:16, marginBottom:16 },
   flag:       { fontSize:48 },
   title:      { color:'var(--text)', fontSize:24, fontWeight:800, margin:0 },
