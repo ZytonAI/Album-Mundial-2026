@@ -122,7 +122,7 @@ function TeamCount({ owned, total, pct, done }) {
 }
 
 // ── Country Detail with Undo/Redo ────────────────────────────────────────────
-function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
+function CountryDetail({ countryId, stickers, onUpdateSticker, onBack, undoHistory, undoHistIdx, onUndoHistoryChange, onUndoHistIdxChange }) {
   const { TEAMS, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, flagUrl } = ALBUM_DATA;
   const isSpecial  = countryId === 'FIFA_SPECIAL';
   const isCocacola = countryId === 'COCACOLA';
@@ -134,9 +134,11 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
     ? COCACOLA_STICKERS.map(s => ({ ...s, type:'cocacola' }))
     : (teamStickers[countryId] || []);
 
-  // ── Undo/Redo history ──────────────────────────────────────
-  const [history, setHistory] = useAlbumState([]);  // [{id, from, to}]
-  const [histIdx, setHistIdx] = useAlbumState(-1);
+  // ── Undo/Redo history (vive en App.jsx para sobrevivir la navegación) ──────
+  const history    = undoHistory;
+  const setHistory = onUndoHistoryChange;
+  const histIdx    = undoHistIdx;
+  const setHistIdx = onUndoHistIdxChange;
 
   function applyChange(id, newQty) {
     const from = stickers[id] || 0;

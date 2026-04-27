@@ -23,6 +23,8 @@ function App() {
   const [checkoutLoading, setCheckoutLoading] = useAppState(false);
   const [checkoutError,   setCheckoutError]   = useAppState('');
   const [authInitialMode, setAuthInitialMode] = useAppState('login');
+  const [undoHistory,     setUndoHistory]     = useAppState([]);
+  const [undoHistIdx,     setUndoHistIdx]     = useAppState(-1);
   const userRef = useAppRef(user);
   userRef.current = user;
 
@@ -259,6 +261,10 @@ function App() {
             stickers={stickers}
             onUpdateSticker={handleUpdateSticker}
             onBack={() => setView('album')}
+            undoHistory={undoHistory}
+            undoHistIdx={undoHistIdx}
+            onUndoHistoryChange={setUndoHistory}
+            onUndoHistIdxChange={setUndoHistIdx}
           />
         )}
         {view === 'trades' && <Trades stickers={stickers} onUpdateSticker={handleUpdateSticker} />}
