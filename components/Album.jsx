@@ -226,7 +226,9 @@ function CountryDetail({ countryId, stickers, onUpdateSticker, onBack }) {
               onContextMenu={e => handleRightClick(e, s)}
               title={`${isSpecial ? 'FWC' : isCocacola ? 'CC' : countryId} ${s.num || s.id.split('-')[1]} — ${s.name}`}>
               {isSpecial
-                ? <span style={{fontSize:14, lineHeight:1}}>🏆</span>
+                ? <div style={dCSS2.stickerIsoBadge}>
+                    <span style={dCSS2.stickerIsoCode}>FWC</span>
+                  </div>
                 : isCocacola
                 ? <div style={dCSS2.stickerIsoBadge}>
                     <span style={dCSS2.stickerIsoCode}>CC</span>
