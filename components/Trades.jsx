@@ -16,7 +16,8 @@ function getStickerLabel(id) {
 // ── Main Component ───────────────────────────────────────────────────────────
 function Trades({ stickers, onUpdateSticker }) {
   const { TEAMS, teamStickers, SPECIAL_STICKERS } = ALBUM_DATA;
-  const [tab, setTab] = useStateTr('log'); // log | suggestions | offer | want
+  const [tab, setTab]             = useStateTr('log'); // log | suggestions | offer | want
+  const [offerSearch, setOfferSearch] = useStateTr('');
 
   // ── Computed analysis ─────────────────────────────────────
   const analysis = useMemoTr(() => {
@@ -49,6 +50,18 @@ function Trades({ stickers, onUpdateSticker }) {
     });
     return { offer, want, suggestions: suggestions.slice(0,10) };
   }, [stickers]);
+
+  const filteredOffer = useMemoTr(() => {
+    if (!offerSearch.trim()) return analysis.offer;
+    const qNorm = offerSearch.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
+    const qLow  = offerSearch.trim().toLowerCase();
+    return analysis.offer.filter(s =>
+      s.id.includes(qNorm) ||
+      s.id.replace('-', ' ').toLowerCase().includes(qLow) ||
+      s.section.toLowerCase().includes(qLow) ||
+      (s.name && s.name.toLowerCase().includes(qLow))
+    );
+  }, [offerSearch, analysis.offer]);
 
   const totalOffer = analysis.offer.reduce((a,s) => a+s.extras, 0);
 
@@ -129,7 +142,26 @@ function Trades({ stickers, onUpdateSticker }) {
       )}
 
       {/* Offer list */}
-      {tab==='offer' && <StickerGroupList groups={groupBySection(analysis.offer)} type="offer" emptyMsg="No tienes láminas repetidas aún." />}
+      {tab==='offer' && (
+        <div>
+          <div style={tCSS.offerSearchWrap}>
+            <input
+              style={tCSS.offerSearchInput}
+              type="text"
+              placeholder="🔍 Buscar repetida: COL 12, Argentina, Escudo…"
+              value={offerSearch}
+              onChange={e => setOfferSearch(e.target.value)}
+            />
+            {offerSearch && (
+              <button style={tCSS.offerSearchClear} onClick={() => setOfferSearch('')}>✕</button>
+            )}
+          </div>
+          {offerSearch.trim() && filteredOffer.length === 0
+            ? <EmptyTr msg={`Sin resultados para "${offerSearch.trim()}"`} />
+            : <StickerGroupList groups={groupBySection(filteredOffer)} type="offer" emptyMsg="No tienes láminas repetidas aún." />
+          }
+        </div>
+      )}
 
       {/* Want list */}
       {tab==='want' && <StickerGroupList groups={groupBySection(analysis.want)} type="want" emptyMsg="¡Álbum completo! No te falta ninguna." />}
@@ -456,6 +488,10 @@ const tCSS = {
   logPartner: { color:'var(--text-dim)', fontSize:12 },
   logDate:    { color:'var(--text-dimmer)', fontSize:11, marginLeft:'auto' },
   deleteBtn:  { background:'none', border:'none', color:'var(--text-dimmer)', cursor:'pointer', fontSize:14, padding:'4px 6px', borderRadius:6, flexShrink:0 },
+
+  offerSearchWrap:  { position:'relative', marginBottom:16 },
+  offerSearchInput: { width:'100%', padding:'10px 40px 10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:14, outline:'none', boxSizing:'border-box' },
+  offerSearchClear: { position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'var(--text-dimmer)', fontSize:16, cursor:'pointer', padding:'4px 6px', lineHeight:1 },
 };
 
 Object.assign(window, { Trades });
