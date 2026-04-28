@@ -18,6 +18,7 @@ function Trades({ stickers, onUpdateSticker }) {
   const { TEAMS, teamStickers, SPECIAL_STICKERS } = ALBUM_DATA;
   const [tab, setTab]             = useStateTr('log'); // log | suggestions | offer | want
   const [offerSearch, setOfferSearch] = useStateTr('');
+  const [wantSearch,  setWantSearch]  = useStateTr('');
 
   // ── Computed analysis ─────────────────────────────────────
   const analysis = useMemoTr(() => {
@@ -62,6 +63,18 @@ function Trades({ stickers, onUpdateSticker }) {
       (s.name && s.name.toLowerCase().includes(qLow))
     );
   }, [offerSearch, analysis.offer]);
+
+  const filteredWant = useMemoTr(() => {
+    if (!wantSearch.trim()) return analysis.want;
+    const qNorm = wantSearch.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
+    const qLow  = wantSearch.trim().toLowerCase();
+    return analysis.want.filter(s =>
+      s.id.includes(qNorm) ||
+      s.id.replace('-', ' ').toLowerCase().includes(qLow) ||
+      s.section.toLowerCase().includes(qLow) ||
+      (s.name && s.name.toLowerCase().includes(qLow))
+    );
+  }, [wantSearch, analysis.want]);
 
   const totalOffer = analysis.offer.reduce((a,s) => a+s.extras, 0);
 
@@ -164,7 +177,26 @@ function Trades({ stickers, onUpdateSticker }) {
       )}
 
       {/* Want list */}
-      {tab==='want' && <StickerGroupList groups={groupBySection(analysis.want)} type="want" emptyMsg="¡Álbum completo! No te falta ninguna." />}
+      {tab==='want' && (
+        <div>
+          <div style={tCSS.offerSearchWrap}>
+            <input
+              style={tCSS.offerSearchInput}
+              type="text"
+              placeholder="🔍 Buscar faltante: COL 12, Argentina, Escudo…"
+              value={wantSearch}
+              onChange={e => setWantSearch(e.target.value)}
+            />
+            {wantSearch && (
+              <button style={tCSS.offerSearchClear} onClick={() => setWantSearch('')}>✕</button>
+            )}
+          </div>
+          {wantSearch.trim() && filteredWant.length === 0
+            ? <EmptyTr msg={`Sin resultados para "${wantSearch.trim()}"`} />
+            : <StickerGroupList groups={groupBySection(filteredWant)} type="want" emptyMsg="¡Álbum completo! No te falta ninguna." />
+          }
+        </div>
+      )}
 
       {/* Trade Log */}
       {tab==='log' && <TradeLog stickers={stickers} onUpdateSticker={onUpdateSticker} />}
