@@ -1,12 +1,29 @@
 // components/Album.jsx
-const { useState: useAlbumState, useMemo: useAlbumMemo } = React;
+const { useState: useAlbumState, useMemo: useAlbumMemo, useRef: useAlbumRef, useEffect: useAlbumEffect } = React;
 
 // ── Countries Grid ───────────────────────────────────────────────────────────
-function Album({ stickers, onSelectCountry }) {
-  const { TEAMS, CONFS, CONF_NAMES, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, flagUrl } = ALBUM_DATA;
+function Album({ stickers, onSelectCountry, onUpdateSticker }) {
+  const { TEAMS, CONFS, CONF_NAMES, teamStickers, SPECIAL_STICKERS, COCACOLA_STICKERS, ALL_STICKERS, flagUrl } = ALBUM_DATA;
   const [search, setSearch]         = useAlbumState('');
   const [activeConf, setActiveConf] = useAlbumState('ALL');
   const [sortMode, setSortMode]     = useAlbumState('conf');
+  const [stickerQ, setStickerQ]     = useAlbumState('');
+  const [flashId,  setFlashId]      = useAlbumState(null);
+  const flashTimer = useAlbumRef(null);
+
+  const stickerResults = useAlbumMemo(() => {
+    const q = stickerQ.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
+    if (q.length < 2) return [];
+    return ALL_STICKERS.filter(s => s.id.includes(q)).slice(0, 24);
+  }, [stickerQ]);
+
+  function quickToggle(s) {
+    const qty = stickers[s.id] || 0;
+    onUpdateSticker(s.id, qty >= 1 ? 0 : 1);
+    if (flashTimer.current) clearTimeout(flashTimer.current);
+    setFlashId(s.id);
+    flashTimer.current = setTimeout(() => setFlashId(null), 700);
+  }
 
   const teamStats = useAlbumMemo(() => {
     const m = {};
@@ -41,6 +58,60 @@ function Album({ stickers, onSelectCountry }) {
 
       <div style={aCSS.controls}>
         <input style={aCSS.search} type="text" placeholder="🔍 Buscar país…" value={search} onChange={e=>setSearch(e.target.value)} />
+
+        {/* Quick sticker lookup */}
+        <div style={aCSS.qWrap}>
+          <div style={aCSS.qInputRow}>
+            <input
+              style={aCSS.qInput}
+              type="text"
+              placeholder="🏷️ Buscar lámina: COL 12, FWC 00, CC 03…"
+              value={stickerQ}
+              onChange={e => setStickerQ(e.target.value)}
+            />
+            {stickerQ && (
+              <button style={aCSS.qClear} onClick={() => setStickerQ('')}>✕</button>
+            )}
+          </div>
+          {stickerResults.length > 0 && (
+            <div style={aCSS.qResults}>
+              {stickerResults.map(s => {
+                const qty     = stickers[s.id] || 0;
+                const owned   = qty >= 1;
+                const dup     = qty >= 2;
+                const flash   = flashId === s.id;
+                const teamId  = s.id.split('-')[0];
+                const team    = TEAMS.find(t => t.id === teamId);
+                const teamName = team ? team.name : s.type === 'special' ? 'Especiales FIFA' : 'Coca-Cola';
+                return (
+                  <div key={s.id} style={{...aCSS.qCard, ...(flash ? aCSS.qCardFlash : {})}}>
+                    <div style={{...aCSS.qBadge, background: dup ? 'var(--gold-bg)' : owned ? 'var(--green-bg)' : 'var(--miss-bg)', borderColor: dup ? 'var(--gold-brd)' : owned ? 'var(--green-brd)' : 'var(--miss-brd)'}}>
+                      <span style={aCSS.qCode}>{s.id.replace('-', ' ')}</span>
+                    </div>
+                    <div style={aCSS.qInfo}>
+                      <div style={aCSS.qTeam}>{teamName}</div>
+                      <div style={aCSS.qName}>{s.name}</div>
+                    </div>
+                    {dup && <span style={aCSS.qDup}>×{qty}</span>}
+                    <button
+                      style={{...aCSS.qToggle, ...(owned ? aCSS.qToggleOwned : aCSS.qToggleMissing)}}
+                      onClick={() => quickToggle(s)}
+                    >
+                      {owned ? (dup ? '⭐ Repetida' : '✓ Tengo') : '+ Agregar'}
+                    </button>
+                  </div>
+                );
+              })}
+              {stickerResults.length === 24 && (
+                <div style={aCSS.qMore}>Mostrando los primeros 24 resultados — escribe más para filtrar</div>
+              )}
+            </div>
+          )}
+          {stickerQ.trim().length >= 2 && stickerResults.length === 0 && (
+            <div style={aCSS.qEmpty}>Sin resultados para "{stickerQ.trim().toUpperCase()}"</div>
+          )}
+        </div>
+
         <div style={aCSS.confTabs}>
           {['ALL', ...CONFS].map(c => (
             <button key={c} style={{...aCSS.confTab, ...(activeConf===c ? aCSS.confTabActive : {})}} onClick={() => setActiveConf(c)}>
@@ -351,6 +422,25 @@ const aCSS = {
   sortLabel:  { fontSize:12, color:'var(--text-muted)', fontWeight:600 },
   sortBtn:    { padding:'5px 12px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:99, color:'var(--text-muted)', fontSize:12, cursor:'pointer', fontWeight:500 },
   sortBtnActive: { background:'var(--blue,#2563eb)', color:'#fff', borderColor:'var(--blue,#2563eb)', fontWeight:700 },
+
+  qWrap:        { display:'flex', flexDirection:'column', gap:0 },
+  qInputRow:    { position:'relative', display:'flex', alignItems:'center' },
+  qInput:       { flex:1, padding:'10px 36px 10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:14, outline:'none' },
+  qClear:       { position:'absolute', right:10, background:'none', border:'none', color:'var(--text-dimmer)', fontSize:16, cursor:'pointer', padding:'4px 6px', lineHeight:1 },
+  qResults:     { marginTop:8, display:'flex', flexDirection:'column', gap:6 },
+  qCard:        { display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 12px', transition:'background .25s' },
+  qCardFlash:   { background:'var(--green-bg)', borderColor:'var(--green-brd)' },
+  qBadge:       { minWidth:56, textAlign:'center', borderRadius:8, border:'1px solid', padding:'5px 6px', flexShrink:0 },
+  qCode:        { fontSize:11, fontWeight:800, letterSpacing:'0.06em', lineHeight:1 },
+  qInfo:        { flex:1, minWidth:0 },
+  qTeam:        { fontSize:12, fontWeight:700, color:'var(--text)', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' },
+  qName:        { fontSize:11, color:'var(--text-dim)', marginTop:1 },
+  qDup:         { background:'var(--gold)', color:'#000', fontSize:10, fontWeight:700, borderRadius:99, padding:'2px 7px', flexShrink:0 },
+  qToggle:      { flexShrink:0, padding:'7px 14px', borderRadius:8, border:'1px solid', fontSize:12, fontWeight:700, cursor:'pointer', transition:'all .15s' },
+  qToggleOwned: { background:'var(--green-bg)', borderColor:'var(--green-brd)', color:'var(--green)' },
+  qToggleMissing:{ background:'var(--surface)', borderColor:'var(--border-md)', color:'var(--text-muted)' },
+  qMore:        { fontSize:11, color:'var(--text-dimmer)', textAlign:'center', padding:'4px 0' },
+  qEmpty:       { fontSize:12, color:'var(--text-dimmer)', padding:'10px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, marginTop:6 },
 };
 
 const dCSS2 = {

@@ -254,7 +254,7 @@ function App() {
       {/* ── Main content ──────────────────────────────────── */}
       <main className="app-main" style={sCSS.main}>
         {view === 'dashboard' && <Dashboard stickers={stickers} onNavigate={navigate} />}
-        {view === 'album'     && <Album stickers={stickers} onSelectCountry={c => navigate('country', c)} />}
+        {view === 'album'     && <Album stickers={stickers} onSelectCountry={c => navigate('country', c)} onUpdateSticker={handleUpdateSticker} />}
         {view === 'country'   && selectedCountry && (
           <CountryDetail
             countryId={selectedCountry}
