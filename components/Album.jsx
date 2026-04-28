@@ -7,15 +7,14 @@ function Album({ stickers, onSelectCountry, onUpdateSticker }) {
   const [search, setSearch]         = useAlbumState('');
   const [activeConf, setActiveConf] = useAlbumState('ALL');
   const [sortMode, setSortMode]     = useAlbumState('conf');
-  const [stickerQ, setStickerQ]     = useAlbumState('');
   const [flashId,  setFlashId]      = useAlbumState(null);
   const flashTimer = useAlbumRef(null);
 
   const stickerResults = useAlbumMemo(() => {
-    const q = stickerQ.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
+    const q = search.trim().toUpperCase().replace(/\s+/g, '-').replace(/-+/g, '-');
     if (q.length < 2) return [];
     return ALL_STICKERS.filter(s => s.id.includes(q)).slice(0, 24);
-  }, [stickerQ]);
+  }, [search]);
 
   function quickToggle(s) {
     const qty = stickers[s.id] || 0;
@@ -57,31 +56,29 @@ function Album({ stickers, onSelectCountry, onUpdateSticker }) {
       <h2 style={aCSS.heading}>Álbum FIFA World Cup 2026™</h2>
 
       <div style={aCSS.controls}>
-        <input style={aCSS.search} type="text" placeholder="🔍 Buscar país…" value={search} onChange={e=>setSearch(e.target.value)} />
-
-        {/* Quick sticker lookup */}
+        {/* Buscador unificado: filtra países Y busca láminas por código */}
         <div style={aCSS.qWrap}>
           <div style={aCSS.qInputRow}>
             <input
-              style={aCSS.qInput}
+              style={aCSS.search}
               type="text"
-              placeholder="🏷️ Buscar lámina: COL 12, FWC 00, CC 03…"
-              value={stickerQ}
-              onChange={e => setStickerQ(e.target.value)}
+              placeholder="🔍 Buscar país o lámina: Colombia, COL 12, FWC 00…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
             />
-            {stickerQ && (
-              <button style={aCSS.qClear} onClick={() => setStickerQ('')}>✕</button>
+            {search && (
+              <button style={aCSS.qClear} onClick={() => setSearch('')}>✕</button>
             )}
           </div>
           {stickerResults.length > 0 && (
             <div style={aCSS.qResults}>
               {stickerResults.map(s => {
-                const qty     = stickers[s.id] || 0;
-                const owned   = qty >= 1;
-                const dup     = qty >= 2;
-                const flash   = flashId === s.id;
-                const teamId  = s.id.split('-')[0];
-                const team    = TEAMS.find(t => t.id === teamId);
+                const qty      = stickers[s.id] || 0;
+                const owned    = qty >= 1;
+                const dup      = qty >= 2;
+                const flash    = flashId === s.id;
+                const teamId   = s.id.split('-')[0];
+                const team     = TEAMS.find(t => t.id === teamId);
                 const teamName = team ? team.name : s.type === 'special' ? 'Especiales FIFA' : 'Coca-Cola';
                 return (
                   <div key={s.id} style={{...aCSS.qCard, ...(flash ? aCSS.qCardFlash : {})}}>
@@ -106,9 +103,6 @@ function Album({ stickers, onSelectCountry, onUpdateSticker }) {
                 <div style={aCSS.qMore}>Mostrando los primeros 24 resultados — escribe más para filtrar</div>
               )}
             </div>
-          )}
-          {stickerQ.trim().length >= 2 && stickerResults.length === 0 && (
-            <div style={aCSS.qEmpty}>Sin resultados para "{stickerQ.trim().toUpperCase()}"</div>
           )}
         </div>
 
@@ -404,7 +398,7 @@ const aCSS = {
   page:       { padding:'28px 24px', maxWidth:960, margin:'0 auto' },
   heading:    { fontSize:22, fontWeight:700, color:'var(--text)', marginBottom:20 },
   controls:   { marginBottom:24, display:'flex', flexDirection:'column', gap:12 },
-  search:     { padding:'10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:14, outline:'none' },
+  search:     { width:'100%', padding:'10px 36px 10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:14, outline:'none', boxSizing:'border-box' },
   confTabs:   { display:'flex', gap:8, flexWrap:'wrap' },
   confTab:    { padding:'6px 14px', background:'var(--surface)', border:'1px solid var(--border)', borderRadius:99, color:'var(--text-muted)', fontSize:12, cursor:'pointer', fontWeight:500 },
   confTabActive:{ background:'var(--green)', color:'#fff', borderColor:'var(--green)' },
@@ -425,8 +419,7 @@ const aCSS = {
 
   qWrap:        { display:'flex', flexDirection:'column', gap:0 },
   qInputRow:    { position:'relative', display:'flex', alignItems:'center' },
-  qInput:       { flex:1, padding:'10px 36px 10px 14px', background:'var(--surface)', border:'1px solid var(--border-md)', borderRadius:10, color:'var(--text)', fontSize:14, outline:'none' },
-  qClear:       { position:'absolute', right:10, background:'none', border:'none', color:'var(--text-dimmer)', fontSize:16, cursor:'pointer', padding:'4px 6px', lineHeight:1 },
+  qClear:       { position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'var(--text-dimmer)', fontSize:16, cursor:'pointer', padding:'4px 6px', lineHeight:1 },
   qResults:     { marginTop:8, display:'flex', flexDirection:'column', gap:6 },
   qCard:        { display:'flex', alignItems:'center', gap:10, background:'var(--surface)', border:'1px solid var(--border)', borderRadius:10, padding:'10px 12px', transition:'background .25s' },
   qCardFlash:   { background:'var(--green-bg)', borderColor:'var(--green-brd)' },
