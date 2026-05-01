@@ -73,6 +73,11 @@ function App() {
   }
 
   async function handleCheckout() {
+    if (!user) {
+      setAuthInitialMode('login');
+      setView('auth');
+      return;
+    }
     if (!DB.isSupabaseMode()) {
       setShowPaywall(true);
       return;
@@ -271,7 +276,7 @@ function App() {
       </main>
 
       {/* ── Paywall modal ─────────────────────────────────── */}
-      {showPaywall && <PaywallModal user={user} onClose={() => setShowPaywall(false)} />}
+      {showPaywall && <PaywallModal user={user} onClose={() => setShowPaywall(false)} onLoginRequest={() => { setShowPaywall(false); setAuthInitialMode('login'); setView('auth'); }} />}
 
       {/* ── Success toast ─────────────────────────────────── */}
       {successToast && (
@@ -322,11 +327,15 @@ const sCSS = {
 };
 
 // ── Paywall Modal ─────────────────────────────────────────────────────────────
-function PaywallModal({ user, onClose }) {
+function PaywallModal({ user, onClose, onLoginRequest }) {
   const [loading, setLoading] = useAppState(false);
   const [error, setError]     = useAppState('');
 
   async function handlePay() {
+    if (!user) {
+      setError('Debes iniciar sesión antes de realizar el pago.');
+      return;
+    }
     if (!DB.isSupabaseMode()) {
       setError('Necesitas una cuenta para procesar pagos.');
       return;
@@ -372,9 +381,16 @@ function PaywallModal({ user, onClose }) {
 
         {error && <div style={pwCSS.error}>{error}</div>}
 
-        <button style={{...pwCSS.payBtn, opacity: loading ? .7 : 1}} onClick={handlePay} disabled={loading}>
-          {loading ? 'Redirigiendo…' : '💳 Pagar con MercadoPago'}
-        </button>
+        {!user ? (
+          <>
+            <div style={pwCSS.loginMsg}>Debes iniciar sesión antes de realizar el pago.</div>
+            <button style={pwCSS.payBtn} onClick={onLoginRequest}>Iniciar sesión</button>
+          </>
+        ) : (
+          <button style={{...pwCSS.payBtn, opacity: loading ? .7 : 1}} onClick={handlePay} disabled={loading}>
+            {loading ? 'Redirigiendo…' : '💳 Pagar con MercadoPago'}
+          </button>
+        )}
 
         <button style={pwCSS.skipBtn} onClick={onClose}>Quizás después</button>
       </div>
@@ -395,6 +411,7 @@ const pwCSS = {
   price:     { fontSize:32, fontWeight:800, color:'var(--green)' },
   priceNote: { fontSize:12, color:'var(--text-muted)' },
   error:     { background:'var(--red-bg)', border:'1px solid var(--red-brd)', borderRadius:8, padding:'10px 14px', color:'var(--red)', fontSize:13, marginBottom:14 },
+  loginMsg:  { textAlign:'center', color:'var(--text-muted)', fontSize:13, marginBottom:14 },
   payBtn:    { width:'100%', padding:'14px', background:'#009ee3', border:'none', borderRadius:12, color:'#fff', fontSize:15, fontWeight:700, cursor:'pointer', marginBottom:10, transition:'opacity .2s' },
   skipBtn:   { width:'100%', padding:'10px', background:'none', border:'none', color:'var(--text-dimmer)', fontSize:13, cursor:'pointer' },
 };
